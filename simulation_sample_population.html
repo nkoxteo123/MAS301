@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng: Từ Mẫu Suy Luận Tổng Thể</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --population: #64748b;
+            --sample: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        header {
+            text-align: center;
+            grid-column: 1 / -1;
+            margin-bottom: 1rem;
+        }
+
+        header h1 {
+            color: var(--text-main);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            padding: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .card-title::before {
+            content: '';
+            display: block;
+            width: 6px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .controls {
+            background: #f1f5f9;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .slider-group {
+            margin-bottom: 1rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #cbd5e1;
+            border-radius: 4px;
+            -webkit-appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        button:hover { background: var(--primary-hover); }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-box {
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+        .stat-box.pop { border-left: 4px solid var(--population); }
+        .stat-box.sam { border-left: 4px solid var(--sample); }
+        .stat-value { font-size: 1.5rem; font-weight: 700; margin-top: 0.5rem; }
+
+        /* CI Simulation Canvas */
+        .ci-simulation-area {
+            height: 400px;
+            position: relative;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+        
+        #ciCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .ci-stats {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-around;
+            font-weight: 600;
+        }
+        .ci-hit { color: var(--success); }
+        .ci-miss { color: var(--danger); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Từ Mẫu Suy Ra Tổng Thể</h1>
+            <p>Mô phỏng Định Lý Giới Hạn Trung Tâm (CLT) & Khoảng Tin Cậy</p>
+        </header>
+
+        <!-- Trái: Khảo sát 1 mẫu -->
+        <div class="card">
+            <h2 class="card-title">1. Khảo sát một Mẫu duy nhất</h2>
+            <p class="text-muted" style="margin-bottom: 1rem;">
+                Mỗi lần bạn bấm "Lấy Mẫu", bạn đang đóng vai người đi khảo sát \n người từ tổng thể.
+            </p>
+            
+            <div class="chart-container">
+                <canvas id="distChart"></canvas>
+            </div>
+
+            <div class="controls">
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <span>Cỡ mẫu khảo sát (n)</span>
+                        <span id="n-val" style="color: var(--primary);">100</span>
+                    </div>
+                    <input type="range" id="n-slider" min="10" max="2000" step="10" value="100">
+                </div>
+                <button id="btn-sample">Tiến hành Khảo sát (Lấy Mẫu Ngẫu Nhiên)</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box pop">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">Sự thật Tổng thể (Ẩn)</div>
+                    <div class="stat-value" style="color: var(--population);">μ = 167.00</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">σ = 8.00</div>
+                </div>
+                <div class="stat-box sam" id="sample-res-box">
+                    <div style="font-size: 0.9rem; color: var(--text-muted);">Kết quả từ Mẫu của bạn</div>
+                    <div class="stat-value" id="s-mean-txt" style="color: var(--sample);">x̄ = ---</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);" id="s-sd-txt">s = ---</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 1rem; padding: 1rem; background: #ecfccb; border-radius: 8px; border: 1px dashed #84cc16;">
+                <div style="font-weight: 600; margin-bottom: 0.5rem; color: #4d7c0f;">Suy luận Khoảng tin cậy 95%:</div>
+                <div id="ci-txt" style="font-size: 1.2rem; font-weight: 700; color: #15803d;">[...]</div>
+                <div id="ci-status" style="margin-top: 0.5rem; font-weight: 600;"></div>
+            </div>
+        </div>
+
+        <!-- Phải: Lặp lại khảo sát 100 lần -->
+        <div class="card">
+            <h2 class="card-title">2. Bản chất của "Độ tin cậy 95%"</h2>
+            <p class="text-muted" style="margin-bottom: 1rem;">
+                Điều gì xảy ra nếu có 100 người cùng đi khảo sát, mỗi người lấy 1 mẫu ngẫu nhiên độc lập 
+                (với cỡ mẫu <strong id="n-val-repeated">100</strong> người) để ước lượng tổng thể?
+            </p>
+            
+            <button id="btn-100-samples" style="background: #10b981; margin-bottom: 1rem;">Lặp lại cuộc khảo sát 100 lần</button>
+
+            <div class="ci-simulation-area">
+                <canvas id="ciCanvas"></canvas>
+            </div>
+
+            <div class="ci-stats">
+                <div class="ci-hit" id="hit-count">Bao hàm đúng μ: 0 / 100</div>
+                <div class="ci-miss" id="miss-count">Đoán sai μ: 0 / 100</div>
+            </div>
+            
+            <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                <strong>Nhận xét:</strong> Dù cho mẫu có lệch một chút, Khoảng tin cậy 95% có thiết kế sao cho 
+                khoảng ~95% số lần bạn thực hiện, đoạn màu xanh ĐÃ CHỨA được đường chân lý $\mu$. 
+                Khi bạn tăng cỡ mẫu (n), các đoạn thẳng sẽ NGẮN LẠI (dự đoán chính xác hơn).
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Parameters for true population
+        const POP_MEAN = 167;
+        const POP_SD = 8;
+        
+        let sampleSize = 100;
+        let currentSampleMean = 0;
+        let currentSampleSD = 0;
+
+        // Box-Muller transform for normal distribution
+        function randomNormal(mean, stdDev) {
+            let u = 1 - Math.random();
+            let v = Math.random();
+            return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        // Generate Sample
+        function drawSample(n) {
+            let sample = [];
+            for(let i=0; i<n; i++) {
+                sample.push(randomNormal(POP_MEAN, POP_SD));
+            }
+            return sample;
+        }
+
+        // Calculate Mean and SD
+        function getStats(sample) {
+            let sum = 0;
+            for(let x of sample) sum += x;
+            let mean = sum / sample.length;
+
+            let ss = 0;
+            for(let x of sample) ss += Math.pow(x - mean, 2);
+            let varSamp = ss / (sample.length - 1);
+            let sd = Math.sqrt(varSamp);
+
+            return { mean, sd };
+        }
+
+        // ---------- CHART.JS: Population vs Sample Histogram ----------
+        const ctxDist = document.getElementById('distChart').getContext('2d');
+        
+        // Generate Population PDF Curve
+        let popData = [];
+        for (let x = POP_MEAN - 25; x <= POP_MEAN + 25; x += 0.5) {
+            let y = (1 / (POP_SD * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - POP_MEAN)/POP_SD, 2));
+            popData.push({x: x, y: y});
+        }
+
+        let distChart = new Chart(ctxDist, {
+            type: 'bar',
+            data: {
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Phân bố Tổng thể (N lớn)',
+                        data: popData,
+                        borderColor: '#64748b',
+                        backgroundColor: 'rgba(100, 116, 139, 0.1)',
+                        fill: true,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        yAxisID: 'yPop'
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Mẫu của bạn (Histogram)',
+                        data: [],
+                        backgroundColor: 'rgba(245, 158, 11, 0.5)',
+                        borderColor: 'rgb(245, 158, 11)',
+                        borderWidth: 1,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0,
+                        yAxisID: 'ySample' // Different Y axis to normalize visually
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: 140, max: 195,
+                        title: { display: true, text: 'Chiều cao (cm)' }
+                    },
+                    yPop: { display: false, min: 0 },
+                    ySample: { display: false, min: 0 }
+                },
+                plugins: {
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        // Create bins for histogram
+        function createHistogram(sample) {
+            let min = 140;
+            let max = 195;
+            let binWidth = 2; // 2cm bins
+            let bins = Math.ceil((max - min) / binWidth);
+            let freq = new Array(bins).fill(0);
+            
+            for (let x of sample) {
+                let idx = Math.floor((x - min) / binWidth);
+                if (idx >= 0 && idx < bins) freq[idx]++;
+            }
+
+            let histData = [];
+            for (let i = 0; i < bins; i++) {
+                histData.push({
+                    x: min + i * binWidth + binWidth/2,
+                    y: freq[i] / sample.length // probability density approx
+                });
+            }
+            return histData;
+        }
+
+        function updateSingleSample() {
+            let n = parseInt(document.getElementById('n-slider').value);
+            sampleSize = n;
+            document.getElementById('n-val').innerText = n;
+            document.getElementById('n-val-repeated').innerText = n;
+            
+            let sample = drawSample(n);
+            let stats = getStats(sample);
+            
+            // Update chart
+            distChart.data.datasets[1].data = createHistogram(sample);
+            distChart.update();
+
+            // Update stats text
+            document.getElementById('s-mean-txt').innerText = `x̄ = ${stats.mean.toFixed(2)}`;
+            document.getElementById('s-sd-txt').innerText = `s = ${stats.sd.toFixed(2)}`;
+
+            // CI
+            let SE = stats.sd / Math.sqrt(n);
+            let margin = 1.96 * SE;
+            let ciLow = stats.mean - margin;
+            let ciHigh = stats.mean + margin;
+            
+            let containsMu = (POP_MEAN >= ciLow && POP_MEAN <= ciHigh);
+
+            document.getElementById('ci-txt').innerText = `(${ciLow.toFixed(2)}, ${ciHigh.toFixed(2)})`;
+            
+            let statusEl = document.getElementById('ci-status');
+            if (containsMu) {
+                statusEl.innerHTML = `✅ Khoảng này <span style="color: green;">ĐÃ BAO GỒM</span> giá trị thực $\\mu=167$`;
+                document.getElementById('sample-res-box').style.borderLeft = '4px solid #10b981';
+            } else {
+                statusEl.innerHTML = `❌ Rất hiếm (5%): Khoảng này <span style="color: red;">BỊ TRƯỢT</span> khỏi giá trị thực!`;
+                document.getElementById('sample-res-box').style.borderLeft = '4px solid #ef4444';
+            }
+        }
+
+        // ---------- CANVAS: 100 Samples Validation ----------
+        const canvas = document.getElementById('ciCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function draw100Samples() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let n = parseInt(document.getElementById('n-slider').value);
+            
+            // X-axis mapping: 160 to 174
+            let minX = 160;
+            let maxX = 174;
+            function scaleX(val) {
+                return (val - minX) / (maxX - minX) * canvas.width;
+            }
+
+            // Draw Truth Line
+            let muX = scaleX(POP_MEAN);
+            ctx.beginPath();
+            ctx.moveTo(muX, 0);
+            ctx.lineTo(muX, canvas.height);
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '14px Arial';
+            ctx.fillText('μ = 167', muX + 5, 20);
+
+            let hits = 0;
+            let misses = 0;
+            let totalTrials = 100;
+            let yStep = canvas.height / totalTrials;
+
+            let currentTrial = 0;
+
+            function animateTrial() {
+                if(currentTrial >= totalTrials) {
+                    document.getElementById('hit-count').innerText = `Bao hàm đúng μ: ${hits} / 100`;
+                    document.getElementById('miss-count').innerText = `Đoán sai μ: ${misses} / 100`;
+                    return;
+                }
+                
+                // Draw up to 5 trials per frame for speed
+                for(let step=0; step<2 && currentTrial < totalTrials; step++) {
+                    let sample = drawSample(n);
+                    let stats = getStats(sample);
+                    let SE = stats.sd / Math.sqrt(n);
+                    let margin = 1.96 * SE;
+                    let ciLow = stats.mean - margin;
+                    let ciHigh = stats.mean + margin;
+                    
+                    let y = currentTrial * yStep + yStep/2;
+                    let xLow = scaleX(ciLow);
+                    let xHigh = scaleX(ciHigh);
+                    let xMean = scaleX(stats.mean);
+
+                    let hit = (POP_MEAN >= ciLow && POP_MEAN <= ciHigh);
+                    ctx.beginPath();
+                    ctx.moveTo(xLow, y);
+                    ctx.lineTo(xHigh, y);
+                    ctx.strokeStyle = hit ? '#10b981' : '#ef4444'; // Green or red
+                    ctx.lineWidth = Math.max(1, yStep * 0.6);
+                    ctx.stroke();
+
+                    // Dot at mean
+                    ctx.beginPath();
+                    ctx.arc(xMean, y, Math.max(1.5, yStep * 0.4), 0, 2*Math.PI);
+                    ctx.fillStyle = hit ? '#065f46' : '#991b1b';
+                    ctx.fill();
+
+                    if(hit) hits++; else misses++;
+                    currentTrial++;
+                }
+
+                document.getElementById('hit-count').innerText = `Bao hàm đúng μ: ${hits} / ${currentTrial}`;
+                document.getElementById('miss-count').innerText = `Đoán sai μ: ${misses} / ${currentTrial}`;
+                
+                requestAnimationFrame(animateTrial);
+            }
+            animateTrial();
+        }
+
+        // Attach events
+        document.getElementById('n-slider').addEventListener('input', (e) => {
+            document.getElementById('n-val').innerText = e.target.value;
+            document.getElementById('n-val-repeated').innerText = e.target.value;
+        });
+
+        document.getElementById('btn-sample').addEventListener('click', updateSingleSample);
+        document.getElementById('btn-100-samples').addEventListener('click', draw100Samples);
+
+        // Initial setup
+        updateSingleSample();
+        draw100Samples();
+
+    </script>
+</body>
+</html>

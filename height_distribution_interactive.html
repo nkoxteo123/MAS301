@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sự Biến Đổi Phân Phối Chiều Cao</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --theoretical: #ec4899;
+            --empirical: #3b82f6;
+            --bg: #faf5ff;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr 350px;
+            }
+        }
+
+        header {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        header h1 {
+            color: var(--text-main);
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            padding: 2rem;
+            height: 100%;
+        }
+
+        .card-header {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+        }
+
+        /* Bảng điều khiển */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .control-group {
+            background: #f3f4f6;
+            padding: 1.25rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .control-group .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #d1d5db;
+            border-radius: 3px;
+            -webkit-appearance: none;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--primary-hover);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+            margin-top: auto;
+        }
+        
+        .btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+
+        .note {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Trực Quan Hóa Phân Phối Chiều Cao</h1>
+            <p>Khám phá cách Độ lệch chuẩn (σ) quy định hình dáng phân phối và Cỡ mẫu (n) làm mịn dữ liệu biểu đồ.</p>
+        </header>
+
+        <!-- Đồ thị chính -->
+        <div class="card">
+            <div class="card-header">Sự Chồng Lấp Giữa Mẫu Số Liệu & Đường Cong Lý Thuyết</div>
+            <div class="chart-container">
+                <canvas id="distChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bảng điều khiển -->
+        <div class="card" style="display: flex; flex-direction: column;">
+            <div class="card-header">Bảng Điều Khiển (Parameters)</div>
+            
+            <div class="controls">
+                <!-- Điều khiển Trung bình (Phân tịnh tiến) -->
+                <div class="control-group">
+                    <label>Trung Bình Tổng Thể (μ) - cm</label>
+                    <div class="value" id="val-mu">167</div>
+                    <input type="range" id="slider-mu" min="140" max="190" step="1" value="167">
+                </div>
+
+                <!-- Điều khiển Độ lệch chuẩn (Độ thuôn nhọn) -->
+                <div class="control-group">
+                    <label>Độ Lệch Chuẩn (σ) - cm</label>
+                    <div class="value" id="val-sigma">8.0</div>
+                    <input type="range" id="slider-sigma" min="2" max="25" step="0.5" value="8">
+                </div>
+
+                <!-- Điều khiển Cỡ mẫu (Độ hội tụ mẫu học) -->
+                <div class="control-group">
+                    <label>Cỡ Mẫu Khảo Sát (n) người</label>
+                    <div class="value" id="val-n">500</div>
+                    <input type="range" id="slider-n" min="10" max="10000" step="10" value="500">
+                </div>
+            </div>
+
+            <button class="btn" id="btn-resample" style="margin-top: 2rem;">Lấy Lại Mẫu Dữ Liệu</button>
+
+            <div class="note">
+                <strong>Quan sát:</strong><br>
+                1. Kéo <strong style="color: var(--primary);">σ lớn</strong>, quả chuông sẽ lùn và phình ra. Khác biệt giữa người này người kia rất cao.<br>
+                2. Kéo <strong style="color: var(--primary);">n lớn (10,000)</strong>, các cột (Histogram) của mẫu sẽ lấp đầy và ép sát đường cong tuyệt đối lý thuyết!
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Box-Muller Transform
+        function randomNormal(mean, stdDev) {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random(); 
+            while(v === 0) v = Math.random();
+            let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+            return num * stdDev + mean;
+        }
+
+        const ctx = document.getElementById('distChart').getContext('2d');
+
+        const distChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Lý Thuyết (Phân phối chuẩn)',
+                        data: [],
+                        borderColor: 'rgba(236, 72, 153, 1)', // var(--theoretical)
+                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                        fill: true,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Số liệu Mẫu (Histogram đo thực tế)',
+                        data: [],
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)', // var(--empirical)
+                        borderColor: 'rgb(59, 130, 246)',
+                        borderWidth: 1,
+                        barPercentage: 1.0,
+                        categoryPercentage: 1.0,
+                        yAxisID: 'y'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 300 // Rút ngắn thời gian animation để kéo slider mượt hơn
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: 100, max: 230,
+                        title: { display: true, text: 'Chiều cao (cm)', font: { size: 14 } }
+                    },
+                    y: {
+                        display: true,
+                        min: 0, 
+                        title: { display: true, text: 'Mật độ xác suất (Density)', font: { size: 14 } }
+                    }
+                },
+                plugins: {
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        const sliderMu = document.getElementById('slider-mu');
+        const sliderSigma = document.getElementById('slider-sigma');
+        const sliderN = document.getElementById('slider-n');
+
+        function updateSimulation(resample = false) {
+            const mu = parseFloat(sliderMu.value);
+            const sigma = parseFloat(sliderSigma.value);
+            const n = parseInt(sliderN.value);
+
+            // Update Labels
+            document.getElementById('val-mu').innerText = mu;
+            document.getElementById('val-sigma').innerText = sigma.toFixed(1);
+            document.getElementById('val-n').innerText = n.toLocaleString();
+
+            // 1. Cập nhật đường lý thuyết
+            let theoData = [];
+            let maxDensity = 0;
+            for(let x = 100; x <= 230; x += 1) {
+                let y = (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
+                theoData.push({x: x, y: y});
+                if(y > maxDensity) maxDensity = y;
+            }
+
+            // Gắn max cột Y theo đường cong max + buffer
+            distChart.options.scales.y.max = maxDensity * 1.2;
+
+            // 2. Tạo tập mẫu (chỉ tạo lại khi resample = true hoặc N thay đổi kích thước)
+            // Để tối ưu trải nghiệm kéo, ta có thể resample luôn mỗi khi kéo (chỉ nặng khi n quá lớn)
+            let sample = [];
+            for(let i=0; i<n; i++) {
+                sample.push(randomNormal(mu, sigma));
+            }
+
+            // Tạo Histogram 2cm một cột
+            const BIN_WIDTH = 2;
+            const minX = 100;
+            const maxX = 230;
+            const numOfBins = Math.ceil((maxX - minX) / BIN_WIDTH);
+            let counts = new Array(numOfBins).fill(0);
+
+            for(let val of sample) {
+                let idx = Math.floor((val - minX) / BIN_WIDTH);
+                if(idx >= 0 && idx < numOfBins) {
+                    counts[idx]++;
+                }
+            }
+
+            // Chuyển counts sang Density Histogram
+            let histData = [];
+            for(let i=0; i<numOfBins; i++) {
+                let midX = minX + i * BIN_WIDTH + BIN_WIDTH/2;
+                let density = counts[i] / (n * BIN_WIDTH);
+                histData.push({x: midX, y: density});
+            }
+
+            distChart.data.datasets[0].data = theoData;
+            distChart.data.datasets[1].data = histData;
+            
+            // Xóa animation tạm thời nếu gọi do kéo slider để tránh giật
+            if(!resample) {
+                distChart.options.animation = false;
+            } else {
+                distChart.options.animation = { duration: 400 };
+            }
+            
+            distChart.update();
+        }
+
+        // Delay timer for slider sliding to avoid freezing when n is extremely large
+        let debounceTimer;
+
+        [sliderMu, sliderSigma, sliderN].forEach(slider => {
+            slider.addEventListener('input', () => {
+                // Phản hồi chữ mượt
+                document.getElementById(`val-${slider.id.split('-')[1]}`).innerText = 
+                    slider.id === 'slider-sigma' ? parseFloat(slider.value).toFixed(1) : parseFloat(slider.value).toLocaleString();
+                
+                clearTimeout(debounceTimer);
+                // Vẽ lại sau 30ms
+                debounceTimer = setTimeout(() => updateSimulation(false), 30);
+            });
+        });
+
+        document.getElementById('btn-resample').addEventListener('click', () => updateSimulation(true));
+
+        // Start
+        updateSimulation(true);
+    </script>
+</body>
+</html>

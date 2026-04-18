@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAS301 – Thống Kê Mô Tả & Suy Luận | AI-First</title>
+    <meta name="description" content="Bộ công cụ trực quan hóa thống kê tương tác theo phương pháp AI-First cho môn MAS301.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --card-hover: #334155;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --accent-1: #8b5cf6;
+            --accent-2: #ec4899;
+            --accent-3: #3b82f6;
+            --accent-4: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 5rem 2rem 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero .badge {
+            display: inline-block;
+            background: rgba(139,92,246,0.2);
+            color: var(--accent-1);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            position: relative;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--muted);
+            font-size: 1.15rem;
+            margin-top: 1rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 2rem;
+            text-decoration: none;
+            color: var(--text);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            background: var(--card-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent-1), var(--accent-2)); }
+        .card:nth-child(2)::before { background: linear-gradient(90deg, var(--accent-3), var(--accent-1)); }
+        .card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent-2), var(--accent-4)); }
+        .card:nth-child(4)::before { background: linear-gradient(90deg, var(--accent-4), var(--accent-3)); }
+
+        .card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .card .arrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 1.25rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-1);
+            transition: gap 0.2s;
+        }
+
+        .card:hover .arrow { gap: 10px; }
+
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--muted);
+            font-size: 0.85rem;
+        }
+
+        footer a {
+            color: var(--accent-1);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <div class="badge">📊 MAS301 — Phương pháp AI-First</div>
+        <h1>Thống Kê <span>Trực Quan</span> Tương Tác</h1>
+        <p>Bộ công cụ mô phỏng giúp bạn hiểu bản chất thống kê mô tả và suy luận — không cần công thức, chỉ cần tương tác.</p>
+    </section>
+
+    <div class="grid">
+
+        <a class="card" href="interactive_statistics.html">
+            <div class="icon">📈</div>
+            <h2>Thống Kê Mô Tả & Khoảng Tin Cậy</h2>
+            <p>Biểu đồ phân bố chiều cao, phân phối chuẩn và mô phỏng khoảng tin cậy 95% với 3 thanh trượt tương tác.</p>
+            <div class="arrow">Khám phá →</div>
+        </a>
+
+        <a class="card" href="simulation_sample_population.html">
+            <div class="icon">🎯</div>
+            <h2>Từ Mẫu Suy Ra Tổng Thể</h2>
+            <p>Mô phỏng lấy mẫu ngẫu nhiên và lặp lại 100 lần để thấy ý nghĩa thực sự của "Độ tin cậy 95%".</p>
+            <div class="arrow">Khám phá →</div>
+        </a>
+
+        <a class="card" href="height_distribution_interactive.html">
+            <div class="icon">🔔</div>
+            <h2>Phân Phối Chiều Cao Tương Tác</h2>
+            <p>Thay đổi μ, σ và cỡ mẫu n để xem biểu đồ chuông biến đổi theo thời gian thực — minh họa Định luật Số lớn.</p>
+            <div class="arrow">Khám phá →</div>
+        </a>
+
+        <a class="card" href="hr_decision_support.html">
+            <div class="icon">🏢</div>
+            <h2>Hỗ Trợ Quyết Định Nhân Sự</h2>
+            <p>Nhập chỉ số năng suất nhân viên, nhận phân tích thống kê và quyết định quản trị theo 4 kịch bản kinh doanh.</p>
+            <div class="arrow">Khám phá →</div>
+        </a>
+
+    </div>
+
+    <footer>
+        <p>MAS301 — Thống kê Mô tả & Suy luận · Phương pháp AI-First</p>
+        <p style="margin-top: 0.5rem;">Mã nguồn trên <a href="https://github.com/nkoxteo123/MAS301" target="_blank">GitHub</a></p>
+    </footer>
+
+</body>
+</html>

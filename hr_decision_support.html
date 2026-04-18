@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hỗ Trợ Quyết Định Quản Trị Nhân Sự</title>
+    <meta name="description" content="Công cụ hỗ trợ ra quyết định quản trị nhân sự dựa trên phân tích thống kê mô tả và suy luận.">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* ============================================
+           DESIGN SYSTEM
+           ============================================ */
+        :root {
+            /* Palette */
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+
+            --emerald-50: #ecfdf5;
+            --emerald-100: #d1fae5;
+            --emerald-400: #34d399;
+            --emerald-500: #10b981;
+            --emerald-600: #059669;
+            --emerald-700: #047857;
+
+            --amber-50: #fffbeb;
+            --amber-100: #fef3c7;
+            --amber-400: #fbbf24;
+            --amber-500: #f59e0b;
+            --amber-600: #d97706;
+            --amber-700: #b45309;
+
+            --rose-50: #fff1f2;
+            --rose-100: #ffe4e6;
+            --rose-400: #fb7185;
+            --rose-500: #f43f5e;
+            --rose-600: #e11d48;
+            --rose-700: #be123c;
+
+            --violet-50: #f5f3ff;
+            --violet-100: #ede9fe;
+            --violet-400: #a78bfa;
+            --violet-500: #8b5cf6;
+            --violet-600: #7c3aed;
+            --violet-700: #6d28d9;
+
+            --blue-500: #3b82f6;
+            --blue-600: #2563eb;
+
+            /* Semantic */
+            --bg: var(--slate-50);
+            --card-bg: #ffffff;
+            --text-primary: var(--slate-900);
+            --text-secondary: var(--slate-500);
+            --border: var(--slate-200);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.04);
+            --shadow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 12px 28px rgba(0,0,0,0.06);
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ============================================
+           RESET & BASE
+           ============================================ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        .app-header {
+            background: linear-gradient(135deg, var(--slate-800) 0%, var(--slate-900) 100%);
+            color: white;
+            padding: 2rem 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .app-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            position: relative;
+        }
+
+        .app-header p {
+            color: var(--slate-400);
+            font-size: 0.95rem;
+            margin-top: 0.35rem;
+            position: relative;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(139,92,246,0.2);
+            color: var(--violet-400);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 0;
+            min-height: calc(100vh - 120px);
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============================================
+           INPUT PANEL (LEFT)
+           ============================================ */
+        .input-panel {
+            background: var(--card-bg);
+            border-right: 1px solid var(--border);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .slider-card {
+            background: var(--slate-50);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            transition: border-color var(--transition);
+        }
+
+        .slider-card:hover {
+            border-color: var(--violet-400);
+        }
+
+        .slider-card label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 0.15rem;
+        }
+
+        .slider-card .desc {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .slider-row input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--slate-300);
+            border-radius: 3px;
+            outline: none;
+            transition: background var(--transition);
+        }
+
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: var(--violet-500);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(139,92,246,0.35);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .slider-row input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 10px rgba(139,92,246,0.5);
+        }
+
+        .slider-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--violet-600);
+            min-width: 52px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .threshold-highlight {
+            border-left: 3px solid var(--amber-500);
+        }
+
+        /* ============================================
+           DASHBOARD (RIGHT)
+           ============================================ */
+        .dashboard {
+            padding: 2rem 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            overflow-y: auto;
+        }
+
+        /* Decision Card */
+        .decision-card {
+            border-radius: var(--radius);
+            padding: 2rem;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .decision-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            opacity: 0.1;
+            transition: all 0.5s;
+        }
+
+        .decision-card .decision-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .decision-card .decision-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            opacity: 0.7;
+        }
+
+        .decision-card .decision-text {
+            font-size: 1.6rem;
+            font-weight: 800;
+            line-height: 1.3;
+            margin-top: 0.25rem;
+        }
+
+        /* Decision States */
+        .decision-card.state-retrain {
+            background: linear-gradient(135deg, var(--rose-50), var(--rose-100));
+            color: var(--rose-700);
+            border: 1px solid var(--rose-400);
+        }
+        .decision-card.state-retrain::before { background: var(--rose-500); }
+
+        .decision-card.state-purge {
+            background: linear-gradient(135deg, #fef2f2, #fecaca);
+            color: #991b1b;
+            border: 1px solid var(--rose-500);
+        }
+        .decision-card.state-purge::before { background: var(--rose-600); }
+
+        .decision-card.state-reward {
+            background: linear-gradient(135deg, var(--emerald-50), var(--emerald-100));
+            color: var(--emerald-700);
+            border: 1px solid var(--emerald-400);
+        }
+        .decision-card.state-reward::before { background: var(--emerald-500); }
+
+        .decision-card.state-investigate {
+            background: linear-gradient(135deg, var(--amber-50), var(--amber-100));
+            color: var(--amber-700);
+            border: 1px solid var(--amber-400);
+        }
+        .decision-card.state-investigate::before { background: var(--amber-500); }
+
+        /* Charts Row */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-card);
+            padding: 1.5rem;
+        }
+
+        .chart-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 280px;
+        }
+
+        /* Explanation Card */
+        .explanation-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-card);
+            padding: 2rem;
+        }
+
+        .explanation-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .explanation-content {
+            font-size: 0.92rem;
+            line-height: 1.8;
+            color: var(--slate-700);
+        }
+
+        .explanation-content strong {
+            color: var(--text-primary);
+        }
+
+        .explanation-content .highlight {
+            background: var(--violet-50);
+            border-left: 3px solid var(--violet-500);
+            padding: 0.75rem 1rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+
+        /* Stats strip */
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-strip {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .stat-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1rem 1.25rem;
+            text-align: center;
+            box-shadow: var(--shadow-card);
+        }
+
+        .stat-item .stat-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+
+        .stat-item .stat-val {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin-top: 0.25rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Scenario meter */
+        .scenario-meter {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .scenario-pill {
+            flex: 1;
+            text-align: center;
+            padding: 0.6rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            opacity: 0.35;
+            transition: all var(--transition);
+            border: 2px solid transparent;
+        }
+
+        .scenario-pill.active {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .pill-retrain { background: var(--rose-100); color: var(--rose-700); }
+        .pill-retrain.active { border-color: var(--rose-500); }
+        .pill-purge { background: #fecaca; color: #991b1b; }
+        .pill-purge.active { border-color: var(--rose-600); }
+        .pill-reward { background: var(--emerald-100); color: var(--emerald-700); }
+        .pill-reward.active { border-color: var(--emerald-500); }
+        .pill-investigate { background: var(--amber-100); color: var(--amber-700); }
+        .pill-investigate.active { border-color: var(--amber-500); }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header class="app-header">
+        <div class="badge">📊 AI-First Statistics</div>
+        <h1>Hỗ Trợ Quyết Định Quản Trị Nhân Sự</h1>
+        <p>Phân tích năng suất nhân viên dựa trên thống kê mô tả → suy luận → ra quyết định</p>
+    </header>
+
+    <!-- MAIN LAYOUT -->
+    <div class="main-grid">
+
+        <!-- LEFT: Input Panel -->
+        <aside class="input-panel" id="inputPanel">
+            <div class="panel-title">Biến đầu vào</div>
+
+            <div class="slider-card" id="card-xbar">
+                <label for="slider-xbar">Năng suất Trung bình Mẫu (x̄)</label>
+                <div class="desc">Điểm năng suất trung bình đo được từ nhóm nhân viên khảo sát.</div>
+                <div class="slider-row">
+                    <input type="range" id="slider-xbar" min="0" max="100" step="1" value="55">
+                    <span class="slider-value" id="val-xbar">55</span>
+                </div>
+            </div>
+
+            <div class="slider-card" id="card-s">
+                <label for="slider-s">Độ lệch chuẩn mẫu (s)</label>
+                <div class="desc">Mức độ chênh lệch năng suất giữa các nhân viên trong mẫu.</div>
+                <div class="slider-row">
+                    <input type="range" id="slider-s" min="1" max="50" step="0.5" value="8">
+                    <span class="slider-value" id="val-s">8.0</span>
+                </div>
+            </div>
+
+            <div class="slider-card" id="card-n">
+                <label for="slider-n">Cỡ mẫu (n)</label>
+                <div class="desc">Số nhân viên được đánh giá trong đợt khảo sát này.</div>
+                <div class="slider-row">
+                    <input type="range" id="slider-n" min="5" max="100" step="1" value="30">
+                    <span class="slider-value" id="val-n">30</span>
+                </div>
+            </div>
+
+            <div class="slider-card threshold-highlight" id="card-L">
+                <label for="slider-L">Ngưỡng kỳ vọng (L)</label>
+                <div class="desc">Mức năng suất tối thiểu mà tổ chức đặt ra cho nhân viên.</div>
+                <div class="slider-row">
+                    <input type="range" id="slider-L" min="0" max="100" step="1" value="60">
+                    <span class="slider-value" id="val-L">60</span>
+                </div>
+            </div>
+
+            <!-- Scenario Indicator -->
+            <div>
+                <div class="panel-title">Ma trận kịch bản</div>
+                <div class="scenario-meter">
+                    <div class="scenario-pill pill-retrain" id="pill-1">① Yếu đều<br>Đào tạo lại</div>
+                    <div class="scenario-pill pill-purge" id="pill-2">② Phân hóa<br>Thanh lọc</div>
+                    <div class="scenario-pill pill-reward" id="pill-3">③ Ổn định<br>Khen thưởng</div>
+                    <div class="scenario-pill pill-investigate" id="pill-4">④ Rủi ro<br>Điều tra</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- RIGHT: Dashboard -->
+        <main class="dashboard" id="dashboard">
+
+            <!-- Decision Card -->
+            <div class="decision-card state-retrain" id="decisionCard">
+                <div class="decision-icon" id="decisionIcon">⚠️</div>
+                <div class="decision-label">Quyết định quản trị</div>
+                <div class="decision-text" id="decisionText">Đang phân tích...</div>
+            </div>
+
+            <!-- Stats Strip -->
+            <div class="stats-strip">
+                <div class="stat-item">
+                    <div class="stat-label">Sai số chuẩn (SE)</div>
+                    <div class="stat-val" id="stat-se">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">KTC 95% (Cận dưới)</div>
+                    <div class="stat-val" id="stat-ci-lo">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">KTC 95% (Cận trên)</div>
+                    <div class="stat-val" id="stat-ci-hi">—</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Hệ số biến thiên (CV)</div>
+                    <div class="stat-val" id="stat-cv">—</div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <h3>Phân bố năng suất nhân viên (Hình chuông)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="bellChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Vị trí x̄ so với Ngưỡng kỳ vọng L</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="gaugeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explanation -->
+            <div class="explanation-card">
+                <h3>📝 Giải thích logic quyết định</h3>
+                <div class="explanation-content" id="explanationContent">
+                    Đang chờ dữ liệu...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ============================================
+         JAVASCRIPT ENGINE
+         ============================================ -->
+    <script>
+        // ── Elements ──
+        const sliders = {
+            xbar: document.getElementById('slider-xbar'),
+            s: document.getElementById('slider-s'),
+            n: document.getElementById('slider-n'),
+            L: document.getElementById('slider-L')
+        };
+
+        const vals = {
+            xbar: document.getElementById('val-xbar'),
+            s: document.getElementById('val-s'),
+            n: document.getElementById('val-n'),
+            L: document.getElementById('val-L')
+        };
+
+        const decisionCard = document.getElementById('decisionCard');
+        const decisionIcon = document.getElementById('decisionIcon');
+        const decisionText = document.getElementById('decisionText');
+        const explanationContent = document.getElementById('explanationContent');
+
+        const pills = [
+            document.getElementById('pill-1'),
+            document.getElementById('pill-2'),
+            document.getElementById('pill-3'),
+            document.getElementById('pill-4')
+        ];
+
+        // ── Chart: Bell Curve ──
+        const ctxBell = document.getElementById('bellChart').getContext('2d');
+        let bellChart = new Chart(ctxBell, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: 'Phân bố năng suất',
+                        data: [],
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.15)',
+                        fill: true,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        borderWidth: 2.5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 200 },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        min: 0, max: 100,
+                        title: { display: true, text: 'Điểm năng suất', font: { size: 12 } },
+                        grid: { color: '#f1f5f9' }
+                    },
+                    y: {
+                        display: false
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        // ── Chart: Gauge (Horizontal bar showing xbar vs L) ──
+        const ctxGauge = document.getElementById('gaugeChart').getContext('2d');
+        let gaugeChart = new Chart(ctxGauge, {
+            type: 'bar',
+            data: {
+                labels: ['Vùng dưới ngưỡng', 'Vùng trên ngưỡng'],
+                datasets: [
+                    {
+                        label: 'Vùng',
+                        data: [60, 40],
+                        backgroundColor: ['rgba(244,63,94,0.3)', 'rgba(16,185,129,0.3)'],
+                        borderColor: ['#f43f5e', '#10b981'],
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 200 },
+                scales: {
+                    x: {
+                        stacked: true,
+                        min: 0, max: 100,
+                        title: { display: true, text: 'Điểm năng suất', font: { size: 12 } },
+                        grid: { color: '#f1f5f9' }
+                    },
+                    y: {
+                        display: false
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        // ── Normal PDF ──
+        function normalPDF(x, mean, sd) {
+            return (1 / (sd * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / sd, 2));
+        }
+
+        // ── Core Decision Logic ──
+        function classify(xbar, s, n, L) {
+            // Hệ số biến thiên (Coefficient of Variation)
+            const cv = (xbar > 0) ? (s / xbar) : 0;
+            const belowThreshold = xbar < L;
+            const lowVariation = cv < 0.20;
+            const highVariation = cv > 0.40;
+
+            if (belowThreshold && lowVariation) return 'retrain';
+            if (belowThreshold && highVariation) return 'purge';
+            if (belowThreshold) return 'retrain'; // default sub-threshold with medium variation
+            if (!belowThreshold && lowVariation) return 'reward';
+            if (!belowThreshold && highVariation) return 'investigate';
+            return 'reward'; // default above-threshold with medium variation
+        }
+
+        const SCENARIO_DATA = {
+            retrain: {
+                icon: '🔴',
+                stateClass: 'state-retrain',
+                text: 'ĐÀO TẠO LẠI HỆ THỐNG',
+                pillIndex: 0
+            },
+            purge: {
+                icon: '🚨',
+                stateClass: 'state-purge',
+                text: 'THANH LỌC NHÂN SỰ',
+                pillIndex: 1
+            },
+            reward: {
+                icon: '🏆',
+                stateClass: 'state-reward',
+                text: 'KHEN THƯỞNG & NHÂN RỘNG',
+                pillIndex: 2
+            },
+            investigate: {
+                icon: '🔍',
+                stateClass: 'state-investigate',
+                text: 'ĐIỀU TRA RỦI RO',
+                pillIndex: 3
+            }
+        };
+
+        function buildExplanation(scenario, xbar, s, n, L, SE, ciLo, ciHi, cv) {
+            const cvPercent = (cv * 100).toFixed(1);
+
+            const common = `
+                <p><strong>Các chỉ số đầu vào:</strong> Trung bình mẫu <strong>x̄ = ${xbar}</strong>, 
+                Độ lệch chuẩn <strong>s = ${s}</strong>, Cỡ mẫu <strong>n = ${n}</strong>, 
+                Ngưỡng kỳ vọng <strong>L = ${L}</strong>.</p>
+                <p>Hệ số biến thiên (CV) = s / x̄ = <strong>${cvPercent}%</strong>. 
+                Sai số chuẩn (SE) = s / √n = <strong>${SE.toFixed(2)}</strong>.</p>
+                <p>Khoảng tin cậy 95% cho năng suất trung bình tổng thể: 
+                <strong>(${ciLo.toFixed(2)}, ${ciHi.toFixed(2)})</strong>.</p>
+                <div class="highlight">`;
+
+            let detail = '';
+
+            switch (scenario) {
+                case 'retrain':
+                    detail = `
+                        Kịch bản <strong>"Yếu đều"</strong>: Năng suất trung bình (x̄ = ${xbar}) 
+                        <strong>thấp hơn</strong> ngưỡng kỳ vọng (L = ${L}), đồng thời hệ số biến thiên CV = ${cvPercent}% 
+                        cho thấy <strong>mức độ phân tán rất thấp</strong> — tức là các nhân viên đều yếu một cách đồng đều.</p>
+                        <p>➡️ <strong>Đề xuất:</strong> Lỗi nằm ở <em>quy trình chung</em> hoặc <em>chương trình đào tạo</em>, 
+                        không phải do cá nhân riêng lẻ. Cần <strong>rà soát lại toàn bộ hệ thống vận hành</strong> 
+                        và triển khai đào tạo lại cho cả đội ngũ.`;
+                    break;
+                case 'purge':
+                    detail = `
+                        Kịch bản <strong>"Phân hóa đối cực"</strong>: Năng suất trung bình (x̄ = ${xbar}) 
+                        <strong>thấp hơn</strong> ngưỡng kỳ vọng (L = ${L}), nhưng hệ số biến thiên CV = ${cvPercent}% 
+                        cho thấy <strong>sự phân hóa cực lớn</strong> trong đội ngũ.</p>
+                        <p>Điều này nghĩa là trong nhóm vừa có những nhân viên <strong>rất giỏi</strong> 
+                        (điểm cao lên đến ~${Math.round(xbar + 2*s)}) vừa có những nhân viên <strong>rất kém</strong> 
+                        (điểm thấp xuống đến ~${Math.max(0, Math.round(xbar - 2*s))}). 
+                        Nhóm kém kéo tụt trung bình chung xuống dưới ngưỡng.</p>
+                        <p>➡️ <strong>Đề xuất:</strong> Cần <strong>thanh lọc nhân sự</strong> — giữ lại và phát triển 
+                        những cá nhân xuất sắc, đồng thời đào tạo lại hoặc điều chuyển những nhân viên có năng suất quá thấp.`;
+                    break;
+                case 'reward':
+                    detail = `
+                        Kịch bản <strong>"Ổn định xuất sắc"</strong>: Năng suất trung bình (x̄ = ${xbar}) 
+                        <strong>đạt hoặc vượt</strong> ngưỡng kỳ vọng (L = ${L}), và hệ số biến thiên CV = ${cvPercent}% 
+                        cho thấy <strong>sự đồng đều cao</strong> trong đội ngũ.</p>
+                        <p>Đây là trạng thái lý tưởng: cả đội ngũ đang vận hành hiệu quả, phong độ ổn định 
+                        và đồng bộ. Khoảng tin cậy 95% cho thấy năng suất thực tế của tổng thể rất có thể nằm 
+                        trên ngưỡng kỳ vọng.</p>
+                        <p>➡️ <strong>Đề xuất:</strong> <strong>Khen thưởng toàn đội</strong>, ghi nhận thành tích 
+                        và nhân rộng mô hình vận hành này sang các phòng ban khác.`;
+                    break;
+                case 'investigate':
+                    detail = `
+                        Kịch bản <strong>"Rủi ro tiềm ẩn"</strong>: Năng suất trung bình (x̄ = ${xbar}) 
+                        <strong>đạt hoặc vượt</strong> ngưỡng kỳ vọng (L = ${L}), nhưng hệ số biến thiên CV = ${cvPercent}% 
+                        cho thấy <strong>sự phân tán đáng lo ngại</strong>.</p>
+                        <p>⚠️ Thành tích trung bình cao trên bề mặt, nhưng thực tế phụ thuộc vào 
+                        <strong>một vài cá nhân "gánh team"</strong> có năng suất vượt trội (~${Math.min(100, Math.round(xbar + 2*s))} điểm), 
+                        trong khi nhiều đồng nghiệp khác lại chỉ đạt mức ~${Math.max(0, Math.round(xbar - 2*s))} điểm. 
+                        Nếu người giỏi nghỉ việc, hệ thống sẽ sụp đổ.</p>
+                        <p>➡️ <strong>Đề xuất:</strong> Cần <strong>điều tra nguyên nhân gốc</strong> gây phân hóa, 
+                        xây dựng chương trình mentoring từ nhân viên giỏi, và giảm thiểu rủi ro phụ thuộc cá nhân.`;
+                    break;
+            }
+
+            return common + detail + `</div>`;
+        }
+
+        // ── Master Update ──
+        function update() {
+            const xbar = parseFloat(sliders.xbar.value);
+            const s = parseFloat(sliders.s.value);
+            const n = parseInt(sliders.n.value);
+            const L = parseInt(sliders.L.value);
+
+            // Display values
+            vals.xbar.innerText = xbar;
+            vals.s.innerText = s.toFixed(1);
+            vals.n.innerText = n;
+            vals.L.innerText = L;
+
+            // Derived statistics
+            const SE = s / Math.sqrt(n);
+            const Z = 1.96;
+            const ciLo = xbar - Z * SE;
+            const ciHi = xbar + Z * SE;
+            const cv = (xbar > 0) ? s / xbar : 0;
+
+            document.getElementById('stat-se').innerText = SE.toFixed(2);
+            document.getElementById('stat-ci-lo').innerText = ciLo.toFixed(2);
+            document.getElementById('stat-ci-hi').innerText = ciHi.toFixed(2);
+            document.getElementById('stat-cv').innerText = (cv * 100).toFixed(1) + '%';
+
+            // Classification
+            const scenario = classify(xbar, s, n, L);
+            const data = SCENARIO_DATA[scenario];
+
+            // Update Decision Card
+            decisionCard.className = 'decision-card ' + data.stateClass;
+            decisionIcon.innerText = data.icon;
+            decisionText.innerText = data.text;
+
+            // Update Pills
+            pills.forEach((p, i) => p.classList.toggle('active', i === data.pillIndex));
+
+            // Update Explanation
+            explanationContent.innerHTML = buildExplanation(scenario, xbar, s, n, L, SE, ciLo, ciHi, cv);
+
+            // ── Update Bell Chart ──
+            const effectiveSD = Math.max(s, 1); // prevent zero-width
+            let bellData = [];
+            for (let x = 0; x <= 100; x += 0.5) {
+                bellData.push({ x: x, y: normalPDF(x, xbar, effectiveSD) });
+            }
+            bellChart.data.datasets[0].data = bellData;
+
+            // Color Bell Chart based on scenario
+            const colorMap = {
+                retrain: { border: '#f43f5e', bg: 'rgba(244,63,94,0.15)' },
+                purge: { border: '#dc2626', bg: 'rgba(220,38,38,0.15)' },
+                reward: { border: '#10b981', bg: 'rgba(16,185,129,0.15)' },
+                investigate: { border: '#f59e0b', bg: 'rgba(245,158,11,0.15)' }
+            };
+            bellChart.data.datasets[0].borderColor = colorMap[scenario].border;
+            bellChart.data.datasets[0].backgroundColor = colorMap[scenario].bg;
+
+            // Y-axis max
+            const peakY = normalPDF(xbar, xbar, effectiveSD);
+            bellChart.options.scales.y = { display: false, max: peakY * 1.3 };
+            bellChart.update();
+
+            // ── Update Gauge Chart ──
+            gaugeChart.data.datasets[0].data = [L, 100 - L];
+            // Add annotation-like visual: xbar position
+            // We'll overlay a second dataset as a thin marker
+            if (gaugeChart.data.datasets.length < 2) {
+                gaugeChart.data.datasets.push({
+                    label: 'x̄ Marker',
+                    data: [0, 0],
+                    backgroundColor: 'transparent',
+                    borderColor: 'transparent',
+                    borderWidth: 0
+                });
+            }
+            gaugeChart.update();
+
+            // Draw xbar marker manually on gauge canvas
+            requestAnimationFrame(() => drawGaugeMarker(xbar, L, ciLo, ciHi));
+        }
+
+        function drawGaugeMarker(xbar, L, ciLo, ciHi) {
+            const canvas = document.getElementById('gaugeChart');
+            const chartArea = gaugeChart.chartArea;
+            if (!chartArea) return;
+
+            const ctx2 = canvas.getContext('2d');
+            const xScale = gaugeChart.scales.x;
+            
+            // Draw L line
+            const lPx = xScale.getPixelForValue(L);
+            ctx2.save();
+            ctx2.beginPath();
+            ctx2.setLineDash([4, 4]);
+            ctx2.moveTo(lPx, chartArea.top);
+            ctx2.lineTo(lPx, chartArea.bottom);
+            ctx2.strokeStyle = '#64748b';
+            ctx2.lineWidth = 2;
+            ctx2.stroke();
+            ctx2.setLineDash([]);
+
+            // L label
+            ctx2.fillStyle = '#64748b';
+            ctx2.font = 'bold 11px Inter';
+            ctx2.textAlign = 'center';
+            ctx2.fillText(`L=${L}`, lPx, chartArea.top - 6);
+
+            // Draw CI band
+            const ciLoPx = xScale.getPixelForValue(Math.max(0, ciLo));
+            const ciHiPx = xScale.getPixelForValue(Math.min(100, ciHi));
+            const bandY = (chartArea.top + chartArea.bottom) / 2;
+            const bandH = (chartArea.bottom - chartArea.top) * 0.35;
+            ctx2.fillStyle = 'rgba(139,92,246,0.18)';
+            ctx2.fillRect(ciLoPx, bandY - bandH/2, ciHiPx - ciLoPx, bandH);
+            ctx2.strokeStyle = '#8b5cf6';
+            ctx2.lineWidth = 1.5;
+            ctx2.strokeRect(ciLoPx, bandY - bandH/2, ciHiPx - ciLoPx, bandH);
+
+            // Draw xbar marker
+            const xPx = xScale.getPixelForValue(xbar);
+            ctx2.beginPath();
+            ctx2.arc(xPx, bandY, 8, 0, 2 * Math.PI);
+            ctx2.fillStyle = '#7c3aed';
+            ctx2.fill();
+            ctx2.strokeStyle = '#fff';
+            ctx2.lineWidth = 2;
+            ctx2.stroke();
+
+            // xbar label
+            ctx2.fillStyle = '#7c3aed';
+            ctx2.font = 'bold 11px Inter';
+            ctx2.textAlign = 'center';
+            ctx2.fillText(`x̄=${xbar}`, xPx, bandY + bandH/2 + 16);
+
+            ctx2.restore();
+        }
+
+        // ── Event wiring ──
+        Object.values(sliders).forEach(slider => {
+            slider.addEventListener('input', update);
+        });
+
+        // Init
+        update();
+    </script>
+</body>
+</html>

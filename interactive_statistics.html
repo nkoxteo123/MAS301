@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống Kê Trực Quan – AI-First Statistics</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #0066cc;
+            --primary-light: rgba(0, 102, 204, 0.1);
+            --secondary: #cc3366;
+            --success: #00825a;
+            --warning: #f58c3c;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-main: #2b2b2b;
+            --text-muted: #6b7280;
+            --border-radius: 16px;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 992px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            grid-column: 1 / -1;
+        }
+
+        header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card h2::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* Controls Section */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            background: var(--primary-light);
+            padding: 1.5rem;
+            border-radius: 12px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+        }
+
+        .value-display {
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #d1d5db;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--secondary);
+        }
+
+        /* Result Box */
+        .result-box {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: #ecfdf5;
+            border: 2px solid var(--success);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .result-box h3 {
+            color: var(--success);
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Thống Kê Mô Tả & Suy Luận</h1>
+            <p>Khám phá bản chất của thống kê qua tương tác. Mọi tính toán phức tạp đã có AI lo!</p>
+        </header>
+
+        <!-- Thống kê mô tả -->
+        <div class="card">
+            <h2>Thống Kê Mô Tả (Mẫu)</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-muted);">Biểu đồ phân bố chiều cao của mẫu 500 người. Di chuột vào các cột để xem chi tiết.</p>
+            <div class="chart-container">
+                <canvas id="histogramChart"></canvas>
+            </div>
+            <div style="margin-top: 1rem; display: flex; justify-content: space-between; background: #f3f4f6; padding: 1rem; border-radius: 8px;">
+                <div><strong>Cỡ mẫu (n):</strong> 500</div>
+                <div><strong>Trung bình (\(\bar{x}\)):</strong> 167 cm</div>
+                <div><strong>Độ lệch chuẩn (s):</strong> 8 cm</div>
+            </div>
+        </div>
+
+        <!-- Thống kê suy luận -->
+        <div class="card">
+            <h2>Thống Kê Suy Luận (Khoảng Tin Cậy 95%)</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-muted);">Mô phỏng phân phối của trung bình mẫu và khoảng tin cậy 95% khi tham số thay đổi.</p>
+            
+            <div class="chart-container">
+                <canvas id="normdistChart"></canvas>
+            </div>
+
+            <div class="result-box">
+                <h3>Khoảng Tin Cậy 95% Cho Tổng Thể</h3>
+                <div class="result-value" id="ci-result">(166.30 cm, 167.70 cm)</div>
+                <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
+                    Nghĩa là: Chúng ta tự tin 95% rằng chiều cao trung bình của TOÀN BỘ sinh viên/dân số thực sự nằm trong khoảng này.
+                </p>
+            </div>
+        </div>
+
+        <!-- Bảng điều khiển tương tác -->
+        <div class="card full-width">
+            <h2>Mô Phỏng Tương Tác: Thử Nghiệm Phân Phối</h2>
+            <p style="margin-bottom: 1rem; color: var(--text-muted);">Kéo các thanh trượt để xem khoảng tin cậy thay đổi như thế nào. Định lý giới hạn trung tâm đang hoạt động!</p>
+
+            <div class="controls">
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="sampleSize">Cỡ mẫu (n): Số người được khảo sát</label>
+                        <span class="value-display" id="val-n">500</span>
+                    </div>
+                    <input type="range" id="sampleSize" min="10" max="2000" step="10" value="500">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="meanVal">Trung bình mẫu (\(\bar{x}\)) (cm)</label>
+                        <span class="value-display" id="val-x">167</span>
+                    </div>
+                    <input type="range" id="meanVal" min="150" max="185" step="0.5" value="167">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="stdDev">Độ lệch chuẩn mẫu (s) (cm)</label>
+                        <span class="value-display" id="val-s">8</span>
+                    </div>
+                    <input type="range" id="stdDev" min="1" max="25" step="0.5" value="8">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script tính toán và vẽ biểu đồ -->
+    <script>
+        // Polyfill cho MathJax / KaTeX hiển thị công thức (mô phỏng)
+        
+        // 1. Dữ liệu Thống kê mô tả (Biểu đồ cột)
+        const histData = {
+            labels: ['147', '152', '157', '162', '167', '172', '177', '182', '187'],
+            data: [5, 15, 35, 55, 70, 65, 40, 20, 8]
+        };
+
+        const ctxHist = document.getElementById('histogramChart').getContext('2d');
+        new Chart(ctxHist, {
+            type: 'bar',
+            data: {
+                labels: histData.labels,
+                datasets: [{
+                    label: 'Tần số (Số người)',
+                    data: histData.data,
+                    backgroundColor: 'rgba(0, 102, 204, 0.6)',
+                    borderColor: 'rgba(0, 102, 204, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: 'Chiều cao (cm)' } },
+                    y: { title: { display: true, text: 'Tần số' }, beginAtZero: true }
+                },
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                xMin: 4, // Index 4 tương ứng 167
+                                xMax: 4,
+                                borderColor: 'red',
+                                borderWidth: 3,
+                                borderDash: [5, 5],
+                                label: {
+                                    display: true,
+                                    content: 'Trung bình ~ 167',
+                                    position: 'start'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Thống kê suy luận (Phân phối chuẩn của trung bình mẫu)
+        const ctxNorm = document.getElementById('normdistChart').getContext('2d');
+        
+        // Hàm sinh điểm dữ liệu cho phân phối chuẩn
+        function generateNormalData(mean, stdDev, numPoints = 100) {
+            const minX = mean - 4 * stdDev;
+            const maxX = mean + 4 * stdDev;
+            const step = (maxX - minX) / numPoints;
+            const data = [];
+            
+            for (let x = minX; x <= maxX; x += step) {
+                const y = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
+                data.push({ x: x, y: y });
+            }
+            return data;
+        }
+
+        let normChart = new Chart(ctxNorm, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Mật độ xác suất (PDF)',
+                    data: [],
+                    borderColor: 'rgba(204, 51, 102, 1)',
+                    backgroundColor: 'rgba(204, 51, 102, 0.2)',
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        title: { display: true, text: 'Trung bình chiều cao (cm)' }
+                    },
+                    y: {
+                        display: false // Ẩn trục Y vì giá trị mật độ không có ý nghĩa trực quan với người dùng
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `x: ${context.parsed.x.toFixed(2)}`
+                        }
+                    },
+                    annotation: {
+                        annotations: {}
+                    }
+                }
+            }
+        });
+
+        // 3. Logic tương tác
+        const inputs = {
+            n: document.getElementById('sampleSize'),
+            xBar: document.getElementById('meanVal'),
+            s: document.getElementById('stdDev')
+        };
+        
+        const displays = {
+            n: document.getElementById('val-n'),
+            xBar: document.getElementById('val-x'),
+            s: document.getElementById('val-s'),
+            ciResult: document.getElementById('ci-result')
+        };
+
+        function updateSimulation() {
+            const n = parseFloat(inputs.n.value);
+            const xBar = parseFloat(inputs.xBar.value);
+            const s = parseFloat(inputs.s.value);
+
+            // Cập nhật text hiển thị
+            displays.n.innerText = n;
+            displays.xBar.innerText = xBar;
+            displays.s.innerText = s;
+
+            // Tính sai số chuẩn (Standard Error)
+            const SE = s / Math.sqrt(n);
+            
+            // Z-score cho độ tin cậy 95%
+            const Z_95 = 1.96;
+            
+            // Tính khoảng tin cậy
+            const marginOfError = Z_95 * SE;
+            const ciLower = xBar - marginOfError;
+            const ciUpper = xBar + marginOfError;
+
+            displays.ciResult.innerText = `(${ciLower.toFixed(2)} cm, ${ciUpper.toFixed(2)} cm)`;
+
+            // Cập nhật biểu đồ Normal
+            const newData = generateNormalData(xBar, SE, 150);
+            normChart.data.datasets[0].data = newData;
+            
+            // Điều chỉnh trục X để luôn hiển thị đẹp
+            normChart.options.scales.x.min = xBar - 4 * (s / Math.sqrt(10)); // Fixed scale range to show movement
+            normChart.options.scales.x.max = xBar + 4 * (s / Math.sqrt(10));
+
+            // Cập nhật Annotations (Đường gióng cho CI)
+            normChart.options.plugins.annotation.annotations = {
+                lineLower: {
+                    type: 'line',
+                    xMin: ciLower, xMax: ciLower,
+                    borderColor: '#f58c3c', borderWidth: 2, borderDash: [5, 5],
+                    label: { display: true, content: 'Cận dưới', position: 'start' }
+                },
+                lineUpper: {
+                    type: 'line',
+                    xMin: ciUpper, xMax: ciUpper,
+                    borderColor: '#f58c3c', borderWidth: 2, borderDash: [5, 5],
+                    label: { display: true, content: 'Cận trên', position: 'start' }
+                },
+                boxCI: {
+                    type: 'box',
+                    xMin: ciLower, xMax: ciUpper,
+                    backgroundColor: 'rgba(245, 140, 60, 0.2)',
+                    borderWidth: 0
+                }
+            };
+
+            normChart.update();
+        }
+
+        // Gắn sự kiện thay đổi
+        [inputs.n, inputs.xBar, inputs.s].forEach(input => {
+            input.addEventListener('input', updateSimulation);
+        });
+
+        // Khởi tạo lần đầu
+        updateSimulation();
+
+    </script>
+</body>
+</html>
