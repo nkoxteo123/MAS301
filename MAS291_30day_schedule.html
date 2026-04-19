@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lịch học 30 ngày – MAS291 Statistics & Probability</title>
+<style>
+  :root {
+    --primary: #1e3a5f;
+    --accent: #2980b9;
+    --important: #e74c3c;
+    --important-light: #fde8e8;
+    --review: #8e44ad;
+    --review-light: #f5eaff;
+    --normal: #2ecc71;
+    --normal-light: #eafaf1;
+    --week-bg: #f0f4f8;
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    --modal-shadow: 0 8px 40px rgba(0,0,0,0.22);
+    --tag-vn: #27ae60;
+    --tag-ta: #2980b9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f5f7fa;
+    color: #222;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, #2980b9 100%);
+    color: white;
+    padding: 32px 24px 24px;
+    text-align: center;
+  }
+  .header h1 { font-size: 2rem; font-weight: 700; margin-bottom: 6px; }
+  .header p { font-size: 1rem; opacity: 0.88; margin-bottom: 18px; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 14px;
+    justify-content: center; margin-top: 8px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 0.85rem; background: rgba(255,255,255,0.15);
+    padding: 5px 12px; border-radius: 20px;
+  }
+  .legend-dot { width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; }
+
+  /* PROGRESS BAR */
+  .progress-bar-container {
+    background: rgba(255,255,255,0.18); border-radius: 8px; height: 8px;
+    width: 260px; margin: 14px auto 0; overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%; background: #f9ca24; border-radius: 8px;
+    transition: width 0.4s; width: 0%;
+  }
+  .progress-label { font-size: 0.8rem; margin-top: 6px; opacity: 0.85; }
+
+  /* WEEK SECTIONS */
+  .weeks-container { max-width: 1080px; margin: 30px auto; padding: 0 16px 40px; }
+  .week-block { margin-bottom: 28px; }
+  .week-title {
+    font-size: 0.95rem; font-weight: 700; color: var(--primary);
+    letter-spacing: 1px; text-transform: uppercase;
+    padding: 7px 16px; background: var(--week-bg);
+    border-left: 4px solid var(--accent);
+    border-radius: 4px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .week-tag {
+    font-size: 0.75rem; background: var(--accent); color: white;
+    padding: 2px 10px; border-radius: 12px; font-weight: 600; letter-spacing: 0;
+  }
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 12px;
+  }
+
+  /* DAY CARD */
+  .day-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    cursor: pointer;
+    box-shadow: var(--card-shadow);
+    border-top: 4px solid var(--normal);
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    user-select: none;
+  }
+  .day-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.14); }
+  .day-card.important { border-top-color: var(--important); background: var(--important-light); }
+  .day-card.review { border-top-color: var(--review); background: var(--review-light); }
+  .day-card.done { opacity: 0.55; }
+  .day-card.done::after {
+    content: '✓'; position: absolute; top: 8px; right: 10px;
+    color: #27ae60; font-weight: 700; font-size: 1.1rem;
+  }
+
+  .day-num {
+    font-size: 0.72rem; font-weight: 700; color: #888;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .day-card.important .day-num { color: var(--important); }
+  .day-card.review .day-num { color: var(--review); }
+
+  .day-title { font-size: 0.88rem; font-weight: 600; margin: 4px 0 6px; line-height: 1.35; }
+  .day-chapter {
+    font-size: 0.74rem; background: #e8f4fd; color: var(--accent);
+    padding: 2px 8px; border-radius: 10px; display: inline-block; font-weight: 600;
+  }
+  .day-card.important .day-chapter { background: #fde8e8; color: var(--important); }
+  .day-card.review .day-chapter { background: #f0e6ff; color: var(--review); }
+
+  .star-badge {
+    display: inline-block; margin-left: 4px;
+    color: var(--important); font-size: 0.9rem;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: white; border-radius: 16px;
+    max-width: 580px; width: 100%;
+    box-shadow: var(--modal-shadow);
+    overflow: hidden; animation: slideUp 0.2s ease;
+    max-height: 90vh; overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-header {
+    padding: 22px 24px 16px;
+    border-bottom: 1px solid #eee;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .modal-header.important { background: var(--important-light); border-bottom-color: #f5c6c6; }
+  .modal-header.review { background: var(--review-light); border-bottom-color: #dbbfff; }
+  .modal-day-num { font-size: 0.8rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+  .modal-title { font-size: 1.25rem; font-weight: 700; margin-top: 4px; color: var(--primary); }
+  .close-btn {
+    background: none; border: none; font-size: 1.5rem; cursor: pointer;
+    color: #999; padding: 0 0 0 12px; line-height: 1; flex-shrink: 0;
+  }
+  .close-btn:hover { color: #333; }
+  .modal-body { padding: 20px 24px 24px; }
+
+  .modal-section { margin-bottom: 18px; }
+  .modal-section-title {
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: #999; margin-bottom: 8px;
+  }
+  .modal-section p, .modal-section ul { font-size: 0.92rem; line-height: 1.6; color: #333; }
+  .modal-section ul { padding-left: 18px; }
+  .modal-section li { margin-bottom: 4px; }
+
+  .refs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ref-tag {
+    padding: 5px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+  }
+  .ref-vn { background: #e8f8ef; color: var(--tag-vn); border: 1px solid #b7e4ca; }
+  .ref-ta { background: #e8f4fd; color: var(--tag-ta); border: 1px solid #aed6f1; }
+
+  .tip-box {
+    background: #fffbea; border-left: 4px solid #f9ca24;
+    border-radius: 6px; padding: 12px 14px; font-size: 0.88rem;
+    line-height: 1.6; color: #555;
+  }
+  .important-badge {
+    display: inline-block; background: var(--important); color: white;
+    font-size: 0.75rem; font-weight: 700; padding: 3px 10px;
+    border-radius: 12px; margin-bottom: 10px;
+  }
+
+  .mark-done-btn {
+    width: 100%; padding: 11px; border-radius: 8px; border: none;
+    font-size: 0.92rem; font-weight: 600; cursor: pointer; margin-top: 4px;
+    background: #eafaf1; color: #27ae60;
+    transition: background 0.15s;
+  }
+  .mark-done-btn:hover { background: #d5f5e3; }
+  .mark-done-btn.undone { background: #f8f9fa; color: #999; }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 1.4rem; }
+    .days-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 Lịch học 30 ngày – MAS291</h1>
+  <p>Statistics &amp; Probability · FPT University</p>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#2ecc71"></div>Ngày học thường</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e74c3c"></div>Ngày quan trọng ⭐</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#8e44ad"></div>Ngày ôn tập</div>
+  </div>
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">0 / 30 ngày hoàn thành</div>
+</div>
+
+<div class="weeks-container" id="weeksContainer"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <div class="modal-header" id="modalHeader">
+      <div>
+        <div class="modal-day-num" id="modalDayNum"></div>
+        <div class="modal-title" id="modalTitle"></div>
+      </div>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const DAYS = [
+  // TUẦN 1: Thống kê mô tả & Xác suất cơ bản
+  {
+    day: 1, title: "Giới thiệu Thống kê & Phân loại dữ liệu", chapter: "Ch.1",
+    type: "normal",
+    topics: ["Thống kê mô tả vs suy diễn (Descriptive vs Inferential)", "Biến định tính / định lượng (Qualitative vs Quantitative)", "Thang đo: Nominal, Ordinal, Interval, Ratio", "Population vs Sample"],
+    tip: "Đây là ngày nhẹ nhàng để làm quen. Đọc nhanh lý thuyết VN trước, sau đó xem các ví dụ trong sách TA.",
+    refs: [{type:"vn", text:"VN – Chương 1, trang 1–15"}, {type:"ta", text:"TA – Ch.1: Introduction"}]
+  },
+  {
+    day: 2, title: "Số liệu thống kê mô tả: Trung tâm & Vị trí", chapter: "Ch.1",
+    type: "normal",
+    topics: ["Mean, Median, Mode", "Weighted mean, Trimmed mean", "Percentile, Quartile (Q1, Q2, Q3)", "Five-number summary"],
+    tip: "Luyện tính tay Mean và Median từ một bộ số liệu nhỏ. Phân biệt khi nào dùng Mean, khi nào dùng Median.",
+    refs: [{type:"vn", text:"VN – Chương 1, trang 15–30"}, {type:"ta", text:"TA – Ch.1: Descriptive Stats"}]
+  },
+  {
+    day: 3, title: "Độ biến thiên: Variance, Std Dev, IQR", chapter: "Ch.1",
+    type: "important",
+    topics: ["Range, Interquartile Range (IQR)", "Variance (s² và σ²) – phân biệt mẫu vs tổng thể", "Standard Deviation", "Coefficient of Variation (CV)", "Box plot – phát hiện outlier"],
+    tip: "🔥 Variance là khái niệm nền tảng xuất hiện xuyên suốt môn học. Học kỹ công thức tính s² từ dữ liệu thô. Làm ít nhất 3 bài tập tính tay.",
+    refs: [{type:"vn", text:"VN – Chương 1, trang 30–50"}, {type:"ta", text:"TA – Ch.1: Variability + Solved Problems"}]
+  },
+  {
+    day: 4, title: "Biểu đồ & Trực quan hóa dữ liệu", chapter: "Ch.1",
+    type: "normal",
+    topics: ["Histogram, Frequency table", "Stem-and-leaf plot", "Box plot, Dot plot", "Phân phối lệch trái / phải (Skewness)", "Nhận dạng dạng phân phối qua đồ thị"],
+    tip: "Chú trọng nhận dạng skewness từ histogram – đây là câu hỏi MCQ phổ biến trong đề thi.",
+    refs: [{type:"vn", text:"VN – Chương 1, trang 50–65"}, {type:"ta", text:"TA – Ch.1: Graphical Methods + MCQ"}]
+  },
+  {
+    day: 5, title: "ÔN TẬP Ch.1 + Mini Quiz", chapter: "Ch.1",
+    type: "important",
+    topics: ["Ôn toàn bộ Ch.1: Descriptive Statistics", "Làm bài tập Supplementary Problems trong sách TA", "MCQ luyện tập Ch.1"],
+    tip: "🔥 Ngày review quan trọng. Không được bỏ qua! Làm hết MCQ Ch.1 trong sách TA và ghi lại những câu sai để xem lại.",
+    refs: [{type:"vn", text:"VN – Ôn tập Ch.1"}, {type:"ta", text:"TA – Ch.1: Supplementary Problems + MCQ (all)"}]
+  },
+  {
+    day: 6, title: "Xác suất cơ bản & Không gian mẫu", chapter: "Ch.2",
+    type: "normal",
+    topics: ["Sample space (Ω), Event (biến cố)", "Classical, Empirical, Subjective Probability", "Phép toán: Union (A∪B), Intersection (A∩B), Complement (Aᶜ)", "Mutually exclusive events"],
+    tip: "Vẽ sơ đồ Venn cho mỗi bài toán xác suất – giúp hình dung rõ hơn nhiều.",
+    refs: [{type:"vn", text:"VN – Chương 2, trang 1–20"}, {type:"ta", text:"TA – Ch.2: Probability Basics"}]
+  },
+
+  // TUẦN 2: Xác suất nâng cao & Phân phối rời rạc
+  {
+    day: 7, title: "Quy tắc cộng, nhân Xác suất", chapter: "Ch.2",
+    type: "normal",
+    topics: ["Addition rule: P(A∪B) = P(A)+P(B)−P(A∩B)", "Multiplication rule: P(A∩B) = P(A)·P(B|A)", "Biến cố độc lập (Independent events)", "Counting: Permutation (Pₙₖ), Combination (Cₙₖ)"],
+    tip: "Phân biệt rõ 'mutually exclusive' (không thể xảy ra cùng lúc) vs 'independent' (không ảnh hưởng nhau) – hay bị nhầm trong MCQ.",
+    refs: [{type:"vn", text:"VN – Chương 2, trang 20–40"}, {type:"ta", text:"TA – Ch.2: Addition & Multiplication Rules"}]
+  },
+  {
+    day: 8, title: "Xác suất có điều kiện & Bayes", chapter: "Ch.2",
+    type: "normal",
+    topics: ["Xác suất có điều kiện: P(A|B) = P(A∩B)/P(B)", "Định lý xác suất toàn phần (Total Probability)", "Định lý Bayes: P(Aᵢ|B)"],
+    tip: "Bayes thường ra đề thi! Vẽ cây xác suất (probability tree) để giải nhanh và chính xác hơn.",
+    refs: [{type:"vn", text:"VN – Chương 2, trang 40–60"}, {type:"ta", text:"TA – Ch.2: Conditional Probability + Bayes"}]
+  },
+  {
+    day: 9, title: "ÔN TẬP Ch.2 & Bài tập Xác suất", chapter: "Ch.2",
+    type: "review",
+    topics: ["Ôn tập toàn bộ Ch.2: Probability", "Làm bài tập nâng cao Ch.2", "MCQ Ch.2"],
+    tip: "Review lại tất cả công thức xác suất. Tập giải các bài toán kết hợp (vừa dùng Bayes vừa dùng Total Probability).",
+    refs: [{type:"vn", text:"VN – Ôn tập Ch.2"}, {type:"ta", text:"TA – Ch.2: All Problems + MCQ"}]
+  },
+  {
+    day: 10, title: "Biến ngẫu nhiên rời rạc (Discrete RV)", chapter: "Ch.3",
+    type: "normal",
+    topics: ["Random Variable (RV) – biến ngẫu nhiên", "PMF – Probability Mass Function", "CDF – Cumulative Distribution Function", "E(X) – Kỳ vọng (Expected value)", "Var(X) – Phương sai của RV"],
+    tip: "E(X) và Var(X) là 2 đại lượng cực kỳ quan trọng. Học thuộc công thức tính từ bảng phân phối xác suất.",
+    refs: [{type:"vn", text:"VN – Chương 3, trang 1–25"}, {type:"ta", text:"TA – Ch.3: Discrete RV"}]
+  },
+  {
+    day: 11, title: "Phân phối Nhị thức (Binomial)", chapter: "Ch.3",
+    type: "normal",
+    topics: ["Điều kiện Binomial: n phép thử, 2 kết quả, p cố định, độc lập", "P(X=k) = Cₙₖ · pᵏ · (1-p)ⁿ⁻ᵏ", "E(X)=np, Var(X)=np(1-p)", "Dùng bảng / công thức tính P(X≤k)"],
+    tip: "Kiểm tra 4 điều kiện Binomial trước khi áp dụng. Hay ra câu hỏi dạng 'ít nhất k lần' → tính 1 − P(X≤k−1).",
+    refs: [{type:"vn", text:"VN – Chương 3, trang 25–45"}, {type:"ta", text:"TA – Ch.3: Binomial Distribution"}]
+  },
+  {
+    day: 12, title: "Phân phối Poisson & Geometric", chapter: "Ch.3",
+    type: "normal",
+    topics: ["Poisson: P(X=k) = e⁻λ·λᵏ/k!, E(X)=Var(X)=λ", "Điều kiện dùng Poisson (sự kiện hiếm, λ nhỏ)", "Geometric Distribution: P(X=k) = (1-p)ᵏ⁻¹·p", "Negative Binomial (giới thiệu)"],
+    tip: "Poisson hay xuất hiện trong bài toán về lỗi sản phẩm, tai nạn, cuộc gọi điện thoại. Ghi nhớ λ = n·p khi xấp xỉ Binomial bằng Poisson.",
+    refs: [{type:"vn", text:"VN – Chương 3, trang 45–65"}, {type:"ta", text:"TA – Ch.3: Poisson + Geometric"}]
+  },
+  {
+    day: 13, title: "ÔN TẬP Ch.3 – Phân phối rời rạc", chapter: "Ch.3",
+    type: "review",
+    topics: ["Ôn tập Binomial, Poisson, Geometric", "So sánh các phân phối: khi nào dùng cái nào?", "Làm đầy đủ bài tập và MCQ Ch.3"],
+    tip: "Vẽ bảng so sánh 3 phân phối rời rạc (điều kiện, E(X), Var(X)) để ôn nhanh.",
+    refs: [{type:"vn", text:"VN – Ôn tập Ch.3"}, {type:"ta", text:"TA – Ch.3: All Problems + MCQ"}]
+  },
+
+  // TUẦN 3: Phân phối liên tục & CLT
+  {
+    day: 14, title: "Biến ngẫu nhiên liên tục & PDF", chapter: "Ch.4",
+    type: "normal",
+    topics: ["Continuous RV – Biến ngẫu nhiên liên tục", "PDF – Probability Density Function (hàm mật độ)", "CDF liên tục: F(x) = ∫f(t)dt", "E(X) và Var(X) cho biến liên tục", "Uniform Distribution (phân phối đều)"],
+    tip: "Chú ý: P(X=a)=0 với biến liên tục → chỉ tính trên khoảng. Bài tập thường cho PDF dạng hàm và yêu cầu tính P(a<X<b).",
+    refs: [{type:"vn", text:"VN – Chương 4, trang 1–20"}, {type:"ta", text:"TA – Ch.4: Continuous RV + Uniform"}]
+  },
+  {
+    day: 15, title: "PHÂN PHỐI CHUẨN (Normal Distribution)", chapter: "Ch.4",
+    type: "important",
+    topics: ["Normal distribution N(μ, σ²) – hình chuông đối xứng", "Standard Normal Z~N(0,1): Z = (X−μ)/σ", "Tra bảng Z (Z-table) – đọc P(Z<z)", "68-95-99.7 Rule (Empirical Rule)", "Tính P(a<X<b) từ phân phối chuẩn bất kỳ"],
+    tip: "🔥 ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT! Normal distribution xuất hiện trong 70% bài tập phần sau (CI, Hypothesis Testing). Dành ít nhất 3 tiếng cho ngày này. Làm đến khi tra bảng Z thuần thục.",
+    refs: [{type:"vn", text:"VN – Chương 4, trang 20–50"}, {type:"ta", text:"TA – Ch.4: Normal Distribution + Solved Problems + MCQ"}]
+  },
+  {
+    day: 16, title: "Phân phối Chuẩn nâng cao & Xấp xỉ", chapter: "Ch.4",
+    type: "normal",
+    topics: ["Normal approximation to Binomial (n lớn)", "Điều kiện: np≥5 và n(1-p)≥5", "Continuity correction (hiệu chỉnh liên tục)", "Lognormal distribution (giới thiệu)"],
+    tip: "Khi xấp xỉ Binomial bằng Normal, nhớ dùng continuity correction: P(X=k) ≈ P(k−0.5 < Y < k+0.5).",
+    refs: [{type:"vn", text:"VN – Chương 4, trang 50–65"}, {type:"ta", text:"TA – Ch.4: Normal Approx to Binomial"}]
+  },
+  {
+    day: 17, title: "Phân phối Mũ & Gamma (Exponential)", chapter: "Ch.4",
+    type: "normal",
+    topics: ["Exponential Distribution: f(x)=λe⁻λˣ", "E(X)=1/λ, Var(X)=1/λ²", "Memoryless property (tính không nhớ)", "Liên hệ Exponential – Poisson", "Gamma Distribution (giới thiệu)"],
+    tip: "Bài toán exponential thường liên quan đến thời gian chờ đợi. Nhớ tính chất không nhớ: P(X>s+t|X>s) = P(X>t).",
+    refs: [{type:"ta", text:"TA – Ch.4: Exponential Distribution"}]
+  },
+  {
+    day: 18, title: "Phân phối kết hợp & Bài tập Ch.4", chapter: "Ch.4",
+    type: "normal",
+    topics: ["Joint distribution (phân phối kết hợp – giới thiệu)", "Marginal distribution", "Independent continuous RV", "Làm bài tập tổng hợp Ch.4"],
+    tip: "Nếu chương trình không đề cập joint distribution, tập trung làm bài tập Normal và Exponential thay thế.",
+    refs: [{type:"ta", text:"TA – Ch.4: Joint Distribution + All Problems"}]
+  },
+  {
+    day: 19, title: "ÔN TẬP Ch.4 – Phân phối liên tục", chapter: "Ch.4",
+    type: "review",
+    topics: ["Ôn Normal, Exponential, Uniform", "Luyện tra bảng Z nhanh", "Làm đầy đủ MCQ Ch.4"],
+    tip: "Ngày ôn quan trọng trước CLT. Đảm bảo tra bảng Z và tính Z-score thành thục. Làm lại những bài Normal sai.",
+    refs: [{type:"ta", text:"TA – Ch.4: All Supplementary + MCQ"}]
+  },
+  {
+    day: 20, title: "ĐỊNH LÝ GIỚI HẠN TRUNG TÂM (CLT)", chapter: "Ch.5",
+    type: "important",
+    topics: ["Sampling distribution of X̄ (phân phối mẫu của trung bình)", "Central Limit Theorem: X̄ ~ N(μ, σ²/n) khi n≥30", "Standard Error: SE = σ/√n", "Phân phối mẫu của tỷ lệ p̂", "SE của p̂: √(p(1-p)/n)"],
+    tip: "🔥 CLT là cầu nối từ phân phối lý thuyết sang ứng dụng thực tế (CI và Hypothesis Testing). Hiểu rõ: n tăng → SE giảm → ước lượng chính xác hơn.",
+    refs: [{type:"ta", text:"TA – Ch.5: Sampling Distributions + CLT"}]
+  },
+
+  // TUẦN 4: Ước lượng & Kiểm định một mẫu
+  {
+    day: 21, title: "ƯỚC LƯỢNG ĐIỂM & Tính chất ước lượng", chapter: "Ch.6",
+    type: "important",
+    topics: ["Point Estimation (ước lượng điểm)", "Unbiased estimator (ước lượng không chệch)", "Maximum Likelihood Estimation – MLE", "Method of Moments", "MSE – Mean Squared Error"],
+    tip: "🔥 Ngày chuyển sang phần ứng dụng nặng. Hiểu MLE là nền tảng của hầu hết mọi ước lượng trong thống kê.",
+    refs: [{type:"ta", text:"TA – Ch.6: Point Estimation"}]
+  },
+  {
+    day: 22, title: "Khoảng tin cậy cho μ (σ đã biết)", chapter: "Ch.6",
+    type: "normal",
+    topics: ["Confidence Interval (CI): X̄ ± z_{α/2}·(σ/√n)", "Mức tin cậy 90%, 95%, 99% → z = 1.645, 1.96, 2.576", "Diễn giải đúng CI: 'Nếu lặp nhiều lần thì 95% CI chứa μ thật'", "Tính cỡ mẫu n từ margin of error E"],
+    tip: "Câu hỏi diễn giải CI rất hay ra thi. Chú ý: CI KHÔNG có nghĩa là P(μ trong CI)=0.95!",
+    refs: [{type:"ta", text:"TA – Ch.6: CI for Mean (σ known)"}]
+  },
+  {
+    day: 23, title: "Khoảng tin cậy cho μ (σ chưa biết) – t-distribution", chapter: "Ch.6",
+    type: "normal",
+    topics: ["t-distribution: hình chuông nhưng đuôi dày hơn Z", "Bậc tự do df = n−1", "CI: X̄ ± t_{α/2,n-1}·(s/√n)", "Tra bảng t-distribution", "Khi nào dùng Z, khi nào dùng t?"],
+    tip: "Dùng t khi σ chưa biết VÀ n nhỏ. Khi n≥30, t xấp xỉ Z. Học cách tra bảng t nhanh theo df.",
+    refs: [{type:"ta", text:"TA – Ch.6: CI for Mean (σ unknown)"}]
+  },
+  {
+    day: 24, title: "CI cho Tỷ lệ & Phương sai", chapter: "Ch.6",
+    type: "normal",
+    topics: ["CI cho tỷ lệ p: p̂ ± z_{α/2}·√(p̂(1-p̂)/n)", "Điều kiện: np̂≥10 và n(1-p̂)≥10", "CI cho σ² dùng phân phối Chi-squared (χ²)", "Tra bảng χ²"],
+    tip: "Chi-squared là phân phối không đối xứng → CI cho σ² không đối xứng qua điểm giữa như CI cho μ.",
+    refs: [{type:"ta", text:"TA – Ch.6: CI for Proportion + Variance"}]
+  },
+  {
+    day: 25, title: "ÔN TẬP CI + Bài tập tổng hợp", chapter: "Ch.6",
+    type: "important",
+    topics: ["Ôn toàn bộ Ch.6: Confidence Intervals", "Bài tập tổng hợp: xác định dùng Z hay t hay χ²", "MCQ Ch.6", "Luyện tính cỡ mẫu n"],
+    tip: "🔥 Ngày ôn quan trọng. Tạo bảng quyết định: Z hay t hay χ² dựa trên điều kiện bài. Làm hết MCQ Ch.6.",
+    refs: [{type:"ta", text:"TA – Ch.6: All Problems + MCQ"}]
+  },
+  {
+    day: 26, title: "Nền tảng Kiểm định Giả thuyết (Hypothesis Testing)", chapter: "Ch.7",
+    type: "normal",
+    topics: ["H₀ (null hypothesis) vs H₁ (alternative hypothesis)", "Lỗi Loại I (α) và Lỗi Loại II (β)", "P-value: xác suất quan sát được kết quả ít nhất cực đoan như vậy", "Critical region – vùng bác bỏ", "Quy trình 5 bước kiểm định giả thuyết"],
+    tip: "Học thuộc quy trình 5 bước: (1) Đặt H₀, H₁ → (2) Chọn α → (3) Tính test statistic → (4) Tìm p-value/critical value → (5) Kết luận.",
+    refs: [{type:"ta", text:"TA – Ch.7: Hypothesis Testing Framework"}]
+  },
+
+  // TUẦN 5: Kiểm định & Tổng kết
+  {
+    day: 27, title: "Kiểm định Z-test & t-test một mẫu", chapter: "Ch.7",
+    type: "normal",
+    topics: ["One-sample Z-test cho μ (σ biết)", "One-sample t-test cho μ (σ chưa biết)", "Two-tailed vs One-tailed test", "Test statistic: Z=(X̄−μ₀)/(σ/√n) hoặc t=(X̄−μ₀)/(s/√n)", "Tính và diễn giải p-value"],
+    tip: "Luyện phân biệt bài hai đuôi (H₁: μ≠μ₀) vs một đuôi (H₁: μ>μ₀ hoặc μ<μ₀). Vẽ hình phân phối và tô vùng rejection region.",
+    refs: [{type:"ta", text:"TA – Ch.7: Z-test + t-test + Solved Problems"}]
+  },
+  {
+    day: 28, title: "Kiểm định tỷ lệ & Phương sai (Chi-squared)", chapter: "Ch.7",
+    type: "normal",
+    topics: ["One-sample test cho tỷ lệ p: Z=(p̂−p₀)/√(p₀(1-p₀)/n)", "Chi-squared test cho σ²: χ²=(n-1)s²/σ₀²", "Goodness-of-fit test (giới thiệu)", "Bài tập tổng hợp Ch.7"],
+    tip: "Chi-squared test cho variance: nhớ df=n-1 và bảng Chi-squared có 2 giá trị tới hạn (vì phân phối lệch phải).",
+    refs: [{type:"ta", text:"TA – Ch.7: Tests for Proportion + Variance"}]
+  },
+  {
+    day: 29, title: "Kiểm định HAI MẪU & So sánh", chapter: "Ch.8",
+    type: "important",
+    topics: ["Two-sample t-test: so sánh μ₁ và μ₂ (độc lập)", "Paired t-test: so sánh trước/sau (phụ thuộc)", "Two-sample Z-test cho tỷ lệ", "F-test so sánh hai phương sai", "Welch's t-test khi σ₁≠σ₂"],
+    tip: "🔥 Phần hai mẫu là tổng hợp tất cả kiến thức trước. Phân biệt rõ: Paired (1 nhóm, đo 2 lần) vs Independent (2 nhóm khác nhau).",
+    refs: [{type:"ta", text:"TA – Ch.8: Two-sample Tests + All Problems"}]
+  },
+  {
+    day: 30, title: "TỔNG KẾT & Luyện đề cuối khoá", chapter: "All",
+    type: "important",
+    topics: ["Ôn toàn bộ 30 ngày – bản đồ kiến thức tổng thể", "Làm đề thi thử (past exam / MCQ tổng hợp)", "Review các lỗi sai trong 30 ngày", "Kỹ năng phân tích đề: nhận dạng loại bài → chọn công thức → tính toán"],
+    tip: "🔥 Ngày cuối cùng. Không học thêm kiến thức mới – chỉ review, làm đề, và tự tin! Xem lại những ngày quan trọng: Day 3, 5, 15, 20, 21, 25, 29.",
+    refs: [{type:"ta", text:"TA – Full MCQ Bank + Past Exam Questions"}]
+  }
+];
+
+const WEEKS = [
+  { label: "Tuần 1", tag: "Thống kê mô tả & Xác suất cơ bản", days: [1,2,3,4,5,6] },
+  { label: "Tuần 2", tag: "Xác suất nâng cao & Phân phối rời rạc", days: [7,8,9,10,11,12,13] },
+  { label: "Tuần 3", tag: "Phân phối liên tục & CLT", days: [14,15,16,17,18,19,20] },
+  { label: "Tuần 4", tag: "Ước lượng & Kiểm định một mẫu", days: [21,22,23,24,25,26] },
+  { label: "Tuần 5", tag: "Kiểm định hai mẫu & Tổng kết", days: [27,28,29,30] }
+];
+
+const IMPORTANT_DAYS = [3, 5, 15, 20, 21, 25, 29, 30];
+const REVIEW_DAYS = [5, 9, 13, 19, 25];
+
+let doneDays = JSON.parse(localStorage.getItem('mas291_done') || '[]');
+
+function saveProgress() {
+  try { localStorage.setItem('mas291_done', JSON.stringify(doneDays)); } catch(e){}
+  updateProgress();
+}
+
+function updateProgress() {
+  const pct = Math.round((doneDays.length / 30) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = doneDays.length + ' / 30 ngày hoàn thành';
+}
+
+function buildCalendar() {
+  const container = document.getElementById('weeksContainer');
+  WEEKS.forEach(week => {
+    const block = document.createElement('div');
+    block.className = 'week-block';
+    block.innerHTML = `<div class="week-title">${week.label}: ${week.tag}<span class="week-tag">${week.days.length} ngày</span></div><div class="days-grid" id="grid-${week.label}"></div>`;
+    container.appendChild(block);
+    const grid = block.querySelector('.days-grid');
+    week.days.forEach(d => {
+      const dayData = DAYS[d - 1];
+      const isImportant = IMPORTANT_DAYS.includes(d);
+      const isReview = REVIEW_DAYS.includes(d) && !isImportant;
+      const isDone = doneDays.includes(d);
+      let typeClass = isImportant ? 'important' : (isReview ? 'review' : 'normal');
+      const card = document.createElement('div');
+      card.className = `day-card ${typeClass} ${isDone ? 'done' : ''}`;
+      card.id = `day-card-${d}`;
+      card.innerHTML = `
+        <div class="day-num">Ngày ${d}${isImportant ? '<span class="star-badge">⭐</span>' : ''}</div>
+        <div class="day-title">${dayData.title}</div>
+        <div class="day-chapter">${dayData.chapter}</div>`;
+      card.addEventListener('click', () => openModal(d));
+      grid.appendChild(card);
+    });
+  });
+}
+
+function openModal(dayNum) {
+  const d = DAYS[dayNum - 1];
+  const isImportant = IMPORTANT_DAYS.includes(dayNum);
+  const isReview = REVIEW_DAYS.includes(dayNum);
+  const isDone = doneDays.includes(dayNum);
+
+  const header = document.getElementById('modalHeader');
+  header.className = 'modal-header';
+  if (isImportant) header.classList.add('important');
+  else if (isReview) header.classList.add('review');
+
+  document.getElementById('modalDayNum').textContent = `Ngày ${dayNum} · ${d.chapter}`;
+  document.getElementById('modalTitle').textContent = d.title;
+
+  let bodyHTML = '';
+  if (isImportant) bodyHTML += `<div class="important-badge">⭐ Ngày quan trọng – Không bỏ qua!</div>`;
+
+  bodyHTML += `<div class="modal-section"><div class="modal-section-title">📚 Topics hôm nay</div><ul>`;
+  d.topics.forEach(t => bodyHTML += `<li>${t}</li>`);
+  bodyHTML += `</ul></div>`;
+
+  bodyHTML += `<div class="modal-section"><div class="modal-section-title">💡 Lời khuyên</div><div class="tip-box">${d.tip}</div></div>`;
+
+  if (d.refs && d.refs.length) {
+    bodyHTML += `<div class="modal-section"><div class="modal-section-title">📖 Tài liệu tham khảo</div><div class="refs">`;
+    d.refs.forEach(r => {
+      bodyHTML += `<span class="ref-tag ${r.type === 'vn' ? 'ref-vn' : 'ref-ta'}">${r.type === 'vn' ? '🇻🇳' : '🇬🇧'} ${r.text}</span>`;
+    });
+    bodyHTML += `</div></div>`;
+  }
+
+  bodyHTML += `<button class="mark-done-btn ${isDone ? 'undone' : ''}" id="doneBtn" onclick="toggleDone(${dayNum})">
+    ${isDone ? '↩ Đánh dấu chưa học' : '✅ Đánh dấu đã hoàn thành'}
+  </button>`;
+
+  document.getElementById('modalBody').innerHTML = bodyHTML;
+  document.getElementById('modalOverlay').classList.add('active');
+}
+
+function toggleDone(dayNum) {
+  if (doneDays.includes(dayNum)) {
+    doneDays = doneDays.filter(d => d !== dayNum);
+  } else {
+    doneDays.push(dayNum);
+  }
+  saveProgress();
+  // Update card
+  const card = document.getElementById(`day-card-${dayNum}`);
+  if (card) {
+    if (doneDays.includes(dayNum)) card.classList.add('done');
+    else card.classList.remove('done');
+  }
+  // Update button
+  const isDone = doneDays.includes(dayNum);
+  const btn = document.getElementById('doneBtn');
+  if (btn) {
+    btn.textContent = isDone ? '↩ Đánh dấu chưa học' : '✅ Đánh dấu đã hoàn thành';
+    btn.className = `mark-done-btn ${isDone ? 'undone' : ''}`;
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('active');
+}
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+buildCalendar();
+updateProgress();
+</script>
+</body>
+</html>
