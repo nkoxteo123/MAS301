@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phòng Thí Nghiệm Thống Kê - MAS Day 2</title>
+    <style>
+        :root {
+            --main-color: #214070;
+            --accent: #cc5500;
+            --soft-bg: #f5f5fa;
+            --set-a: #2980b9;
+            --ok-green: #2e7d32;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .dashboard {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: var(--main-color);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 5px solid var(--main-color);
+        }
+
+        .chart-card h2 {
+            margin-top: 0;
+            color: var(--main-color);
+            font-size: 1.4em;
+        }
+
+        .description {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .controls {
+            background: var(--soft-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            font-weight: bold;
+            flex-wrap: wrap;
+            gap: 10px;
+            text-align: center;
+        }
+
+        /* 1. Seesaw */
+        #seesaw-area {
+            height: 180px;
+            position: relative;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            overflow: hidden;
+        }
+        .plank {
+            position: absolute;
+            bottom: 60px;
+            left: 5%;
+            width: 90%;
+            height: 6px;
+            background: #555;
+            border-radius: 3px;
+        }
+        .fulcrum {
+            position: absolute;
+            bottom: 25px;
+            width: 0; height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 35px solid var(--accent);
+            transition: left 0.2s ease-out;
+            transform: translateX(-20px);
+        }
+        .ball {
+            position: absolute;
+            bottom: 66px;
+            width: 24px;
+            height: 24px;
+            background: var(--set-a);
+            border-radius: 50%;
+            cursor: grab;
+            transform: translateX(-12px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* 2. Trimmed Mean Improved */
+        .score-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .score-box {
+            padding: 8px;
+            background: white;
+            border: 1px solid var(--ok-green);
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        .score-box.trimmed {
+            border-color: #ddd;
+            color: #ccc;
+            background: #fafafa;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        #trim-info {
+            background: #e8f5e9;
+            color: var(--ok-green);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* 3. Boxplot */
+        svg { background: #fdfdfd; border-radius: 8px; width: 100%; height: auto; }
+
+        /* 4. Weighted Mean Improved */
+        .weight-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        .weight-label { width: 150px; font-weight: bold; }
+        .weight-slider { flex: 1; }
+        .weight-val { width: 60px; text-align: right; color: var(--accent); font-weight: bold; }
+        #weight-formula {
+            width: 100%;
+            background: white;
+            padding: 15px;
+            border: 1px dashed var(--accent);
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+            color: #444;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <header>
+        <h1>Phòng Thí Nghiệm Thống Kê Tương Tác</h1>
+        <p>Hỗ trợ bài giảng: Trung tâm và Vị trí (MAS Day 2)</p>
+    </header>
+
+    <!-- 1. SEESAW (MEAN) -->
+    <div class="chart-card">
+        <h2>1. Mean là "Điểm Cân Bằng"</h2>
+        <p class="description">Kéo các viên bi để thấy Mean (tam giác cam) luôn tự điều chỉnh để giữ thanh bập bênh thăng bằng.</p>
+        <div id="seesaw-area">
+            <div class="plank"></div>
+            <div id="fulcrum" class="fulcrum" style="left: 50%;"></div>
+        </div>
+        <div class="stats-row">
+            <div style="color:var(--accent)">Giá trị Mean hiện tại: <span id="seesaw-mean">0</span></div>
+        </div>
+    </div>
+
+    <!-- 2. TRIMMED MEAN -->
+    <div class="chart-card">
+        <h2>2. Máy "Tỉa" Dữ Liệu (Trimmed Mean)</h2>
+        <p class="description">Trimmed Mean giúp loại bỏ các giá trị ngoại lai bằng cách cắt đi một tỷ lệ phần trăm các số nhỏ nhất và lớn nhất.</p>
+        <div id="trim-info">Đang tỉa mỗi đầu 0 giá trị.</div>
+        <div class="score-grid" id="trimmed-grid"></div>
+        <div class="controls">
+            <label>Tỷ lệ tỉa (mỗi đầu): <b id="trim-percent-label">0</b>%</label>
+            <input type="range" id="trim-slider" min="0" max="45" value="0" step="5">
+        </div>
+        <div class="stats-row">
+            <div style="color:var(--ok-green)">Trimmed Mean: <span id="trim-res">0</span></div>
+            <div style="color:#666; font-size: 0.8em;">(Tính trên <span id="trim-count">20</span>/20 giá trị còn lại)</div>
+        </div>
+    </div>
+
+    <!-- 3. BOXPLOT -->
+    <div class="chart-card">
+        <h2>3. Boxplot & Five-number Summary</h2>
+        <p class="description">Nhập dãy số của bạn để "vẽ" nên bức chân dung dữ liệu.</p>
+        <input type="text" id="box-input" value="2, 4, 5, 6, 7, 7, 8, 9, 10" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
+        <div style="margin-top:20px;">
+            <svg id="boxplot-svg" viewBox="0 0 600 160"></svg>
+        </div>
+        <div class="stats-row" id="box-stats" style="font-size:0.9em;"></div>
+    </div>
+
+    <!-- 4. WEIGHTED MEAN -->
+    <div class="chart-card">
+        <h2>4. Trung bình có Trọng số (Weighted Mean)</h2>
+        <p class="description">Thay đổi trọng số (%) để thấy cách mỗi cột điểm "kéo" điểm tổng kết.</p>
+        <div class="controls">
+            <div class="weight-item">
+                <div class="weight-label">Chuyên cần (10đ)</div>
+                <input type="range" class="weight-slider" id="w1-s" value="10" min="0" max="100">
+                <div class="weight-val" id="w1-v">10%</div>
+            </div>
+            <div class="weight-item">
+                <div class="weight-label">Giữa kỳ (7đ)</div>
+                <input type="range" class="weight-slider" id="w2-s" value="30" min="0" max="100">
+                <div class="weight-val" id="w2-v">30%</div>
+            </div>
+            <div class="weight-item">
+                <div class="weight-label">Cuối kỳ (8đ)</div>
+                <input type="range" class="weight-slider" id="w3-s" value="60" min="0" max="100">
+                <div class="weight-val" id="w3-v">60%</div>
+            </div>
+        </div>
+
+        <div id="weight-formula">
+            Đang tính toán công thức...
+        </div>
+
+        <div class="stats-row">
+            <div style="color:var(--accent); font-size: 1.4em;">ĐIỂM TỔNG KẾT: <span id="weight-res">0</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. SEESAW
+    const seesawArea = document.getElementById('seesaw-area');
+    const fulcrum = document.getElementById('fulcrum');
+    const seesawMeanText = document.getElementById('seesaw-mean');
+    let points = [15, 35, 45, 55, 75];
+
+    function renderSeesaw() {
+        document.querySelectorAll('.ball').forEach(b => b.remove());
+        let sum = 0;
+        points.forEach((p, i) => {
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.style.left = p + '%';
+            ball.onmousedown = (e) => dragBall(e, i);
+            seesawArea.appendChild(ball);
+            sum += (p / 10);
+        });
+        const mean = sum / points.length;
+        fulcrum.style.left = (mean * 10) + '%';
+        seesawMeanText.innerText = mean.toFixed(2);
+    }
+
+    function dragBall(e, index) {
+        const move = (ev) => {
+            const rect = seesawArea.getBoundingClientRect();
+            let newPos = ((ev.clientX - rect.left) / rect.width) * 100;
+            if (newPos < 5) newPos = 5; if (newPos > 95) newPos = 95;
+            points[index] = newPos;
+            renderSeesaw();
+        };
+        const stop = () => {
+            window.removeEventListener('mousemove', move);
+            window.removeEventListener('mouseup', stop);
+        };
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', stop);
+    }
+
+    // 2. TRIMMED MEAN
+    const trimSlider = document.getElementById('trim-slider');
+    const scores = [2, 3, 5, 5, 6, 7, 7, 7, 8, 8, 8, 9, 9, 10, 11, 12, 15, 18, 25, 40]; 
+    function updateTrimmed() {
+        const p = parseFloat(trimSlider.value);
+        document.getElementById('trim-percent-label').innerText = p;
+        const numToTrim = Math.floor((p/100) * scores.length);
+        const grid = document.getElementById('trimmed-grid');
+        const info = document.getElementById('trim-info');
+        grid.innerHTML = '';
+        info.innerText = numToTrim === 0 ? "Giữ nguyên tất cả 20 giá trị." : `Loại bỏ ${numToTrim} giá trị nhỏ nhất và ${numToTrim} giá trị lớn nhất.`;
+        let sum = 0, count = 0;
+        scores.forEach((s, i) => {
+            const box = document.createElement('div');
+            box.className = 'score-box';
+            if (i < numToTrim || i >= scores.length - numToTrim) box.classList.add('trimmed');
+            else { sum += s; count++; }
+            box.innerText = s;
+            grid.appendChild(box);
+        });
+        document.getElementById('trim-res').innerText = (sum/count).toFixed(2);
+        document.getElementById('trim-count').innerText = count;
+    }
+
+    // 3. BOXPLOT
+    const boxInput = document.getElementById('box-input');
+    function updateBoxplot() {
+        const raw = boxInput.value.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v)).sort((a,b)=>a-b);
+        if (raw.length < 4) return;
+        const min = raw[0], max = raw[raw.length - 1];
+        const getMed = (arr) => {
+            const m = Math.floor(arr.length / 2);
+            return arr.length % 2 !== 0 ? arr[m] : (arr[m-1] + arr[m])/2;
+        };
+        const q2 = getMed(raw);
+        const q1 = getMed(raw.slice(0, Math.floor(raw.length/2)));
+        const q3 = getMed(raw.slice(Math.ceil(raw.length/2)));
+        document.getElementById('box-stats').innerHTML = `<span>Min: ${min}</span> | <span>Q1: ${q1}</span> | <span>Med: ${q2}</span> | <span>Q3: ${q3}</span> | <span>Max: ${max}</span>`;
+        const svg = document.getElementById('boxplot-svg');
+        const range = max - min || 1, pad = 50;
+        const scale = (v) => pad + ((v - min) / range) * 500;
+        svg.innerHTML = `
+            <line x1="${scale(min)}" y1="80" x2="${scale(q1)}" y2="80" stroke="var(--main-color)" stroke-width="2"/>
+            <line x1="${scale(q3)}" y1="80" x2="${scale(max)}" y2="80" stroke="var(--main-color)" stroke-width="2"/>
+            <rect x="${scale(q1)}" y="40" width="${scale(q3)-scale(q1)}" height="80" fill="var(--set-a)" fill-opacity="0.2" stroke="var(--main-color)" stroke-width="2"/>
+            <line x1="${scale(q2)}" y1="40" x2="${scale(q2)}" y2="120" stroke="var(--accent)" stroke-width="4"/>
+            <line x1="${scale(min)}" y1="60" x2="${scale(min)}" y2="100" stroke="var(--main-color)" stroke-width="2"/>
+            <line x1="${scale(max)}" y1="60" x2="${scale(max)}" y2="100" stroke="var(--main-color)" stroke-width="2"/>
+        `;
+    }
+
+    // 4. WEIGHTED MEAN
+    const wInputs = ['w1-s', 'w2-s', 'w3-s'];
+    const scores_w = [10, 7, 8];
+    const labels_w = ["Chuyên cần", "Giữa kỳ", "Cuối kỳ"];
+
+    function updateWeighted() {
+        let total = 0;
+        wInputs.forEach(id => total += parseInt(document.getElementById(id).value));
+        if (total === 0) total = 1; // Avoid division by zero
+
+        let sum = 0;
+        let formulaParts = [];
+        
+        wInputs.forEach((id, i) => {
+            const wVal = parseInt(document.getElementById(id).value);
+            const perc = (wVal / total) * 100;
+            document.getElementById(id.replace('-s','-v')).innerText = perc.toFixed(0) + '%';
+            
+            const partValue = scores_w[i] * (wVal / total);
+            sum += partValue;
+            
+            formulaParts.push(`(${scores_w[i]}đ × ${perc.toFixed(0)}%)`);
+        });
+
+        const formulaText = "<b>Công thức:</b> " + formulaParts.join(" + ") + " = <b>" + sum.toFixed(2) + "</b>";
+        document.getElementById('weight-formula').innerHTML = formulaText;
+        document.getElementById('weight-res').innerText = sum.toFixed(2);
+    }
+
+    renderSeesaw(); updateTrimmed(); updateBoxplot(); updateWeighted();
+    trimSlider.oninput = updateTrimmed; boxInput.oninput = updateBoxplot;
+    wInputs.forEach(id => document.getElementById(id).oninput = updateWeighted);
+</script>
+</body>
+</html>
