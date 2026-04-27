@@ -760,18 +760,46 @@ footer {
 <script>
 // ─── HELPERS ─────────────────────────────────────────────
 const C = (id) => document.getElementById(id);
-const $ = (id) => { const c = C(id); return c.getContext('2d'); };
 const E = 2.718281828459045;
 
-function resizeCanvas(canvas) {
+// ─── CANVAS CACHE: setup once, redraw without resizing ───
+const _cache = {};
+
+function initCanvas(id) {
+  const canvas = C(id);
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = parseInt(canvas.getAttribute('height')) * dpr;
+  const logH = parseInt(canvas.getAttribute('height'));
+  // Fix canvas to its current layout width — do NOT set style.width again later
+  canvas.style.width = '100%';
+  const W = canvas.parentElement.clientWidth - 40;
+  canvas.style.width = W + 'px';
+  const H = logH;
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
-  canvas.style.height = canvas.getAttribute('height') + 'px';
-  return ctx;
+  _cache[id] = { ctx, W, H };
+  return _cache[id];
+}
+
+function getCanvas(id) {
+  if (!_cache[id]) return initCanvas(id);
+  const { ctx, W, H } = _cache[id];
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const dpr = window.devicePixelRatio || 1;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+  return _cache[id];
+}
+
+function initAllCanvases() {
+  // Clear cache so initCanvas re-measures
+  Object.keys(_cache).forEach(k => delete _cache[k]);
+  ['compoundChart','poissonChart','convergenceChart',
+   'posExpChart','negExpChart','taylorChart','flowChart','scalingChart'
+  ].forEach(id => { if (C(id)) initCanvas(id); });
 }
 
 function factorial(k) {
@@ -799,11 +827,8 @@ function yGridLine(ctx, y, W, pl, pr, label, color = '#e8e0d4') {
 
 // ─── CHART 1: COMPOUND INTEREST ─────────────────────────
 function drawCompound() {
-  const canvas = C('compoundChart');
-  const W = canvas.parentElement.offsetWidth - 40;
-  canvas.style.width = W + 'px';
-  const ctx = resizeCanvas(canvas);
-  const H = 240, pl = 64, pr = 20, pt = 20, pb = 40;
+  const { ctx, W, H: H } = getCanvas('compoundChart');
+  const pl = 64, pr = 20, pt = 20, pb = 40;
   const cW = W - pl - pr, cH = H - pt - pb;
 
   const points = [1,2,4,12,52,365,1000,10000,100000];
@@ -867,11 +892,8 @@ function drawCompound() {
 
 // ─── CHART 2: POISSON ───────────────────────────────────
 function drawPoisson(lam) {
-  const canvas = C('poissonChart');
-  const W = canvas.parentElement.offsetWidth - 40;
-  canvas.style.width = W + 'px';
-  const ctx = resizeCanvas(canvas);
-  const H = 240, pl = 50, pr = 16, pt = 20, pb = 36;
+  const { ctx, W, H } = getCanvas('poissonChart');
+  const pl = 50, pr = 16, pt = 20, pb = 36;
   const cW = W - pl - pr, cH = H - pt - pb;
 
   const n = Math.ceil(lam * 3) + 2;
@@ -933,11 +955,8 @@ const convNs = buildConvergenceData();
 const convVals = convNs.map(n => Math.pow(1 + 1/n, n));
 
 function drawConvergence(nCurrent) {
-  const canvas = C('convergenceChart');
-  const W = canvas.parentElement.offsetWidth - 40;
-  canvas.style.width = W + 'px';
-  const ctx = resizeCanvas(canvas);
-  const H = 240, pl = 56, pr = 20, pt = 20, pb = 36;
+  const { ctx, W, H } = getCanvas('convergenceChart');
+  const pl = 56, pr = 20, pt = 20, pb = 36;
   const cW = W - pl - pr, cH = H - pt - pb;
 
   const minV = 2.0, maxV = E + 0.05;
@@ -996,11 +1015,8 @@ function drawConvergence(nCurrent) {
 
 // ─── CHART 4a & 4b: POS/NEG EXP ────────────────────────
 function drawExpComparison(canvasId, sign, color1, color2) {
-  const canvas = C(canvasId);
-  const W = canvas.parentElement.offsetWidth - 40;
-  canvas.style.width = W + 'px';
-  const ctx = resizeCanvas(canvas);
-  const H = 180, pl = 48, pr = 16, pt = 16, pb = 32;
+  const { ctx, W, H } = getCanvas(canvasId);
+  const pl = 48, pr = 16, pt = 16, pb = 32;
   const cW = W - pl - pr, cH = H - pt - pb;
 
   const maxR = 3;
@@ -1047,11 +1063,8 @@ function drawExpComparison(canvasId, sign, color1, color2) {
 
 // ─── CHART 5: TAYLOR ────────────────────────────────────
 function drawTaylor() {
-  const canvas = C('taylorChart');
-  const W = canvas.parentElement.offsetWidth - 40;
-  canvas.style.width = W + 'px';
-  const ctx = resizeCanvas(canvas);
-  const H = 220, pl = 60, pr = 20, pt = 20, pb = 36;
+  const { ctx, W, H } = getCanvas('taylorChart');
+  const pl = 60, pr = 20, pt = 20, pb = 36;
   const cW = W - pl - pr, cH = H - pt - pb;
 
   const terms = 10;
@@ -1129,11 +1142,8 @@ function drawTaylor() {
 
 // ─── CHART 6: FLOW DIAGRAM ──────────────────────────────
 function drawFlow() {
-  const canvas = C('flowChart');
-  const W = canvas.parentElement.offsetWidth - 40;
-  canvas.style.width = W + 'px';
-  const ctx = resizeCanvas(canvas);
-  const H = 180, pad = 20;
+  const { ctx, W, H } = getCanvas('flowChart');
+  const pad = 20;
 
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
 
@@ -1180,11 +1190,8 @@ function drawFlow() {
 
 // ─── CHART 7: SCALING ───────────────────────────────────
 function drawScaling() {
-  const canvas = C('scalingChart');
-  const W = canvas.parentElement.offsetWidth - 40;
-  canvas.style.width = W + 'px';
-  const ctx = resizeCanvas(canvas);
-  const H = 240, pl = 56, pr = 20, pt = 24, pb = 36;
+  const { ctx, W, H } = getCanvas('scalingChart');
+  const pl = 56, pr = 20, pt = 24, pb = 36;
   const cW = W - pl - pr, cH = H - pt - pb;
 
   const lam1 = 3, lam2 = 30;
@@ -1237,8 +1244,8 @@ function drawScaling() {
 // ─── INIT ────────────────────────────────────────────────
 function drawAll() {
   drawCompound();
-  drawPoisson(1);
-  drawConvergence(1);
+  drawPoisson(currentLam);
+  drawConvergence(currentN);
   drawExpComparison('posExpChart', 1, NAVY, 'rgba(27,42,69,0.3)');
   drawExpComparison('negExpChart', -1, GOLD, 'rgba(181,134,42,0.3)');
   drawTaylor();
@@ -1246,36 +1253,38 @@ function drawAll() {
   drawScaling();
 }
 
+let currentLam = 1, currentN = 1;
+
 window.addEventListener('load', () => {
-  setTimeout(drawAll, 100);
+  initAllCanvases();
   setTimeout(() => {
+    drawAll();
     document.querySelectorAll('.chart-wrap').forEach(el => el.classList.add('visible'));
-  }, 300);
+  }, 120);
 });
-window.addEventListener('resize', drawAll);
+
+window.addEventListener('resize', () => {
+  initAllCanvases();
+  drawAll();
+});
 
 // Poisson buttons
 document.querySelectorAll('.lam-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.lam-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    drawPoisson(+btn.dataset.lam);
+    currentLam = +btn.dataset.lam;
+    drawPoisson(currentLam);
   });
 });
 
 // Convergence slider
 C('nSlider').addEventListener('input', function() {
-  const n = +this.value;
-  const v = Math.pow(1 + 1/n, n);
-  C('nVal').textContent = `${n}  →  ${v.toFixed(5)}`;
-  drawConvergence(n);
+  currentN = +this.value;
+  const v = Math.pow(1 + 1/currentN, currentN);
+  C('nVal').textContent = `${currentN}  →  ${v.toFixed(5)}`;
+  drawConvergence(currentN);
 });
-
-// Intersection observer for fade-in
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.15 });
-document.querySelectorAll('.chart-wrap').forEach(el => observer.observe(el));
 
 // Fade in elements
 document.querySelectorAll('.fade-in').forEach((el, i) => {
